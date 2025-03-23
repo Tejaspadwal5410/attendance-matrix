@@ -1,23 +1,22 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Key, Mail, Calendar } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserRole } from '@/utils/supabaseClient';
+import SignupForm from '@/components/SignupForm';
 
-const Index = () => {
+export default function Index() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
-  // If user is already logged in, redirect to appropriate dashboard
+  // Redirect if user is already logged in
   React.useEffect(() => {
     if (user) {
       if (user.role === 'teacher') {
@@ -28,162 +27,86 @@ const Index = () => {
     }
   }, [user, navigate]);
 
-  const handleLogin = async (e: React.FormEvent, role: 'student' | 'teacher') => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
-    
+    setLoading(true);
     try {
-      // For demo purposes, set the email based on the selected role
-      const demoEmail = role === 'teacher' ? 'teacher@example.com' : 'student@example.com';
-      await signIn(demoEmail, password || 'password');
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      await signIn(email, password);
+    } catch (error) {
+      console.error('Login error:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col animate-fade-in">
-      {/* Header */}
-      <header className="py-6 border-b">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <BookOpen className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold">EduTrack</h1>
-          </div>
-        </div>
-      </header>
-      
-      {/* Hero Section */}
-      <div className="flex-1 flex flex-col md:flex-row">
-        <div className="w-full md:w-1/2 bg-gradient-to-br from-primary/5 to-primary/10 p-8 md:p-16 flex items-center justify-center">
-          <div className="max-w-md space-y-6 animate-slide-right">
-            <h2 className="text-4xl md:text-5xl font-bold">Student Attendance & Marks Management</h2>
-            <p className="text-muted-foreground text-lg">
-              A comprehensive solution for teachers and students to track attendance, manage marks, and monitor academic progress.
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-white/50 dark:bg-black/5 rounded-lg">
-                <Calendar className="h-6 w-6 text-primary mb-2" />
-                <h3 className="font-medium">Attendance Tracking</h3>
-                <p className="text-sm text-muted-foreground">Monitor attendance with ease</p>
-              </div>
-              <div className="p-4 bg-white/50 dark:bg-black/5 rounded-lg">
-                <BookOpen className="h-6 w-6 text-primary mb-2" />
-                <h3 className="font-medium">Marks Management</h3>
-                <p className="text-sm text-muted-foreground">Record and analyze student performance</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="w-full md:w-1/2 p-8 md:p-16 flex items-center justify-center">
-          <Card className="w-full max-w-md animate-slide-up shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-2xl">Welcome to EduTrack</CardTitle>
-              <CardDescription>
-                Login to access your dashboard
-              </CardDescription>
-            </CardHeader>
-            <Tabs defaultValue="student" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="student">Student Login</TabsTrigger>
-                <TabsTrigger value="teacher">Teacher Login</TabsTrigger>
-              </TabsList>
-              <TabsContent value="student">
-                <form onSubmit={(e) => handleLogin(e, 'student')}>
-                  <CardContent className="space-y-4 pt-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="student-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input 
-                          id="student-email" 
-                          type="email" 
-                          placeholder="student@example.com" 
-                          className="pl-10"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="student-password">Password</Label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input 
-                          id="student-password" 
-                          type="password" 
-                          placeholder="Enter your password" 
-                          className="pl-10"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
-                    {error && <p className="text-sm text-destructive">{error}</p>}
-                    <p className="text-sm text-muted-foreground">For demo use password: password</p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Logging in...' : 'Login as Student'}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </TabsContent>
-              <TabsContent value="teacher">
-                <form onSubmit={(e) => handleLogin(e, 'teacher')}>
-                  <CardContent className="space-y-4 pt-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="teacher-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input 
-                          id="teacher-email" 
-                          type="email" 
-                          placeholder="teacher@example.com" 
-                          className="pl-10"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="teacher-password">Password</Label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input 
-                          id="teacher-password" 
-                          type="password" 
-                          placeholder="Enter your password" 
-                          className="pl-10"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          disabled={isLoading}
-                        />
-                      </div>
-                    </div>
-                    {error && <p className="text-sm text-destructive">{error}</p>}
-                    <p className="text-sm text-muted-foreground">For demo use password: password</p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Logging in...' : 'Login as Teacher'}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
+      <div className="w-full max-w-md mb-8 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">School Management System</h1>
+        <p className="text-gray-500 mt-2">
+          Track attendance, manage grades, and handle leave requests
+        </p>
       </div>
+
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Welcome</CardTitle>
+          <CardDescription>Log in to your account or create a new one</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            </TabsList>
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <label htmlFor="email" className="block text-sm font-medium">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="password" className="block text-sm font-medium">
+                    Password
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Logging in...' : 'Login'}
+                </Button>
+              </form>
+            </TabsContent>
+            <TabsContent value="signup">
+              <div className="mt-4">
+                <SignupForm />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <div className="text-xs text-gray-500">
+            <p>Demo Accounts:</p>
+            <p>Teacher: teacher@example.com / password</p>
+            <p>Student: student@example.com / password</p>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
-};
-
-export default Index;
+}

@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signUp: (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => Promise<void>;
   isTeacher: () => boolean;
   isStudent: () => boolean;
 }
@@ -126,6 +127,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signUp = async (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => {
+    try {
+      setLoading(true);
+      
+      // Register with Supabase, including metadata for profiles table
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+            avatar_url: avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+          }
+        }
+      });
+      
+      if (error) throw error;
+      toast.success('Registration successful! Please check your email to verify your account.');
+    } catch (error: any) {
+      toast.error(error.message || 'Registration failed');
+      console.error('Signup error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signOut = async () => {
     try {
       setLoading(true);
@@ -145,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isStudent = () => user?.role === 'student';
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, isTeacher, isStudent }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, signUp, isTeacher, isStudent }}>
       {children}
     </AuthContext.Provider>
   );
