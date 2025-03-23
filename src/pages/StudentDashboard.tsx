@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Layout } from '../components/Layout';
 import { DashboardStats } from '../components/Dashboard';
@@ -8,14 +8,32 @@ import { AttendanceCard } from '../components/AttendanceCard';
 import { MarksCard } from '../components/MarksCard';
 import { LeaveRequestCard } from '../components/LeaveRequestCard';
 import { MOCK_DATA } from '../utils/supabaseClient';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const StudentDashboard = () => {
   const { user, isStudent } = useAuth();
-
+  const location = useLocation();
+  
   const [stats, setStats] = useState({
     attendanceRate: 0,
     averageMarks: 0
   });
+
+  // Determine the active tab based on the current URL
+  const getActiveTab = () => {
+    const path = location.pathname;
+    if (path === '/my-attendance') return 'attendance';
+    if (path === '/my-marks') return 'marks';
+    if (path === '/my-leave') return 'leave';
+    return 'dashboard'; // Default tab
+  };
+
+  const [activeTab, setActiveTab] = useState(getActiveTab());
+
+  // Update active tab when route changes
+  useEffect(() => {
+    setActiveTab(getActiveTab());
+  }, [location.pathname]);
 
   useEffect(() => {
     // In a real app, this would fetch from Supabase
@@ -75,27 +93,65 @@ const StudentDashboard = () => {
           averageMarks={stats.averageMarks}
         />
 
-        {/* Main Dashboard Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Attendance Overview */}
-          <AttendanceCard 
-            attendanceData={studentAttendance} 
-            title="My Attendance"
-          />
+        {/* Tabs for different sections */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="attendance">My Attendance</TabsTrigger>
+            <TabsTrigger value="marks">My Marks</TabsTrigger>
+            <TabsTrigger value="leave">Leave Requests</TabsTrigger>
+          </TabsList>
           
-          {/* Marks Overview */}
-          <MarksCard 
-            marksData={studentMarks} 
-            subjects={MOCK_DATA.subjects}
-            title="My Academic Performance"
-          />
+          {/* Dashboard Tab Content - Overview of all */}
+          <TabsContent value="dashboard">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AttendanceCard 
+                attendanceData={studentAttendance} 
+                title="My Attendance"
+              />
+              <MarksCard 
+                marksData={studentMarks} 
+                subjects={MOCK_DATA.subjects}
+                title="My Academic Performance"
+              />
+              <LeaveRequestCard 
+                leaveRequests={studentLeaveRequests}
+                title="My Leave Requests"
+              />
+            </div>
+          </TabsContent>
           
-          {/* Leave Requests */}
-          <LeaveRequestCard 
-            leaveRequests={studentLeaveRequests}
-            title="My Leave Requests"
-          />
-        </div>
+          {/* Attendance Tab Content */}
+          <TabsContent value="attendance">
+            <div className="grid grid-cols-1 gap-6">
+              <AttendanceCard 
+                attendanceData={studentAttendance} 
+                title="My Attendance"
+              />
+            </div>
+          </TabsContent>
+          
+          {/* Marks Tab Content */}
+          <TabsContent value="marks">
+            <div className="grid grid-cols-1 gap-6">
+              <MarksCard 
+                marksData={studentMarks} 
+                subjects={MOCK_DATA.subjects}
+                title="My Academic Performance"
+              />
+            </div>
+          </TabsContent>
+          
+          {/* Leave Requests Tab Content */}
+          <TabsContent value="leave">
+            <div className="grid grid-cols-1 gap-6">
+              <LeaveRequestCard 
+                leaveRequests={studentLeaveRequests}
+                title="My Leave Requests"
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
