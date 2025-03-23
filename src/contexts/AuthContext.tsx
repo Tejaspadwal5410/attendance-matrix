@@ -98,23 +98,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      // For demo, we'll simulate based on the email (you can remove this when ready for real auth)
-      if (process.env.NODE_ENV === 'development' && 
-          ((email === 'teacher@example.com' && password === 'password') || 
-           (email === 'student@example.com' && password === 'password'))) {
-        
-        const mockUser = email === 'teacher@example.com' 
-          ? MOCK_DATA.users.find(u => u.role === 'teacher')
-          : MOCK_DATA.users.find(u => u.role === 'student');
-          
-        if (mockUser) {
-          setUser(mockUser);
-          toast.success(`${mockUser.role.charAt(0).toUpperCase() + mockUser.role.slice(1)} logged in successfully`);
+      // Handle demo accounts with exact matching for both email and password
+      if (email === 'teacher@example.com' && password === 'password') {
+        // Set mock teacher user
+        const teacherUser = MOCK_DATA.users.find(u => u.role === 'teacher');
+        if (teacherUser) {
+          setUser(teacherUser);
+          toast.success('Teacher demo account logged in successfully');
+          return;
+        }
+      } else if (email === 'student@example.com' && password === 'password') {
+        // Set mock student user
+        const studentUser = MOCK_DATA.users.find(u => u.role === 'student');
+        if (studentUser) {
+          setUser(studentUser);
+          toast.success('Student demo account logged in successfully');
           return;
         }
       }
       
-      // Actual Supabase auth
+      // Regular Supabase auth for non-demo accounts
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) throw error;
