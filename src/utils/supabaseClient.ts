@@ -1,13 +1,11 @@
+
 import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-// Use placeholder values that are valid URL format for development
-// Replace these with your actual Supabase credentials when ready
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+// Use the Supabase client from the integration
+export { supabase } from '@/integrations/supabase/client';
 
-// Initialize Supabase client with a valid URL and key format
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
+// User types that match our database schema
 export type UserRole = 'teacher' | 'student';
 
 export interface User {
@@ -55,7 +53,7 @@ export interface LeaveRequest {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-// Mock data for development until Supabase is set up
+// Mock data for development until Supabase auth is fully set up
 export const MOCK_DATA = {
   currentUser: {
     id: '1',
