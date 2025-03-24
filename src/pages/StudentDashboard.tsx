@@ -9,6 +9,7 @@ import { MarksCard } from '../components/MarksCard';
 import { LeaveRequestCard } from '../components/LeaveRequestCard';
 import { MOCK_DATA } from '../utils/supabaseClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 const StudentDashboard = () => {
   const { user, isStudent } = useAuth();
@@ -58,6 +59,9 @@ const StudentDashboard = () => {
       attendanceRate: parseFloat(attendanceRate.toFixed(1)),
       averageMarks: parseFloat(averageMarks.toFixed(1))
     });
+
+    // Show a test notification to verify the app is working
+    toast.success("Dashboard data loaded successfully");
   }, [user]);
 
   // Redirect if not a student
@@ -73,6 +77,12 @@ const StudentDashboard = () => {
   const studentAttendance = MOCK_DATA.attendance.filter(a => a.student_id === user.id);
   const studentMarks = MOCK_DATA.marks.filter(m => m.student_id === user.id);
   const studentLeaveRequests = MOCK_DATA.leaveRequests.filter(l => l.student_id === user.id);
+
+  // Log the data to verify it's being filtered correctly
+  console.log('Student ID:', user.id);
+  console.log('Attendance Records:', studentAttendance);
+  console.log('Marks Records:', studentMarks);
+  console.log('Leave Requests:', studentLeaveRequests);
 
   return (
     <Layout>
