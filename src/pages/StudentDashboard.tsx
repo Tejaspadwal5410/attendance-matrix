@@ -38,7 +38,7 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     // In a real app, this would fetch from Supabase
-    // For demo, we'll use mock data
+    // For now, we're using mock data to test the UI
     
     // Calculate attendance rate for the student
     const studentAttendance = MOCK_DATA.attendance.filter(a => a.student_id === user?.id);
@@ -62,6 +62,10 @@ const StudentDashboard = () => {
 
     // Show a test notification to verify the app is working
     toast.success("Dashboard data loaded successfully");
+    
+    // Log some information about the mock user
+    console.log("Current user ID:", user?.id);
+    console.log("Using MOCK_DATA for testing purposes");
   }, [user]);
 
   // Redirect if not a student
