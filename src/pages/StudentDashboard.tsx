@@ -7,7 +7,7 @@ import { DashboardStats } from '../components/Dashboard';
 import { AttendanceCard } from '../components/AttendanceCard';
 import { MarksCard } from '../components/MarksCard';
 import { LeaveRequestCard } from '../components/LeaveRequestCard';
-import { MOCK_DATA } from '../utils/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -19,6 +19,12 @@ const StudentDashboard = () => {
     attendanceRate: 0,
     averageMarks: 0
   });
+
+  const [loading, setLoading] = useState(true);
+  const [studentAttendance, setStudentAttendance] = useState([]);
+  const [studentMarks, setStudentMarks] = useState([]);
+  const [studentLeaveRequests, setStudentLeaveRequests] = useState([]);
+  const [subjects, setSubjects] = useState([]);
 
   // Determine the active tab based on the current URL
   const getActiveTab = () => {
@@ -37,35 +43,83 @@ const StudentDashboard = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    // In a real app, this would fetch from Supabase
-    // For now, we're using mock data to test the UI
-    
-    // Calculate attendance rate for the student
-    const studentAttendance = MOCK_DATA.attendance.filter(a => a.student_id === user?.id);
-    const totalAttendanceRecords = studentAttendance.length;
-    const presentRecords = studentAttendance.filter(a => a.status === 'present').length;
-    const attendanceRate = totalAttendanceRecords > 0 
-      ? (presentRecords / totalAttendanceRecords) * 100 
-      : 0;
-    
-    // Calculate average marks for the student
-    const studentMarks = MOCK_DATA.marks.filter(m => m.student_id === user?.id);
-    const totalMarks = studentMarks.reduce((sum, mark) => sum + mark.marks, 0);
-    const averageMarks = studentMarks.length > 0 
-      ? totalMarks / studentMarks.length 
-      : 0;
-    
-    setStats({
-      attendanceRate: parseFloat(attendanceRate.toFixed(1)),
-      averageMarks: parseFloat(averageMarks.toFixed(1))
-    });
+    if (!user) return;
 
-    // Show a test notification to verify the app is working
-    toast.success("Dashboard data loaded successfully");
-    
-    // Log some information about the mock user
-    console.log("Current user ID:", user?.id);
-    console.log("Using MOCK_DATA for testing purposes");
+    const fetchStudentData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch attendance data
+        const { data: attendanceData, error: attendanceError } = await supabase
+          .from('attendance')
+          .select('*')
+          .eq('student_id', user.id);
+
+        if (attendanceError) throw attendanceError;
+
+        // Fetch marks data
+        const { data: marksData, error: marksError } = await supabase
+          .from('marks')
+          .select('*')
+          .eq('student_id', user.id);
+
+        if (marksError) throw marksError;
+
+        // Fetch leave requests
+        const { data: leaveData, error: leaveError } = await supabase
+          .from('leave_requests')
+          .select('*')
+          .eq('student_id', user.id);
+
+        if (leaveError) throw leaveError;
+
+        // Fetch subjects for reference
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('subjects')
+          .select('*');
+
+        if (subjectsError) throw subjectsError;
+
+        // Calculate attendance rate
+        const totalAttendanceRecords = attendanceData.length;
+        const presentRecords = attendanceData.filter(a => a.status === 'present').length;
+        const attendanceRate = totalAttendanceRecords > 0 
+          ? (presentRecords / totalAttendanceRecords) * 100 
+          : 0;
+        
+        // Calculate average marks
+        const totalMarks = marksData.reduce((sum, mark) => sum + mark.marks, 0);
+        const averageMarks = marksData.length > 0 
+          ? totalMarks / marksData.length 
+          : 0;
+
+        // Update state with fetched data
+        setStudentAttendance(attendanceData);
+        setStudentMarks(marksData);
+        setStudentLeaveRequests(leaveData);
+        setSubjects(subjectsData);
+        
+        setStats({
+          attendanceRate: parseFloat(attendanceRate.toFixed(1)),
+          averageMarks: parseFloat(averageMarks.toFixed(1))
+        });
+
+        toast.success("Dashboard data loaded successfully");
+        
+        console.log("Data loaded from Supabase database");
+        console.log("User ID:", user.id);
+        console.log("Attendance Records:", attendanceData);
+        console.log("Marks Records:", marksData);
+        console.log("Leave Requests:", leaveData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Error loading dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentData();
   }, [user]);
 
   // Redirect if not a student
@@ -76,17 +130,6 @@ const StudentDashboard = () => {
   if (!isStudent()) {
     return <Navigate to="/teacher" />;
   }
-
-  // Filter data for this student
-  const studentAttendance = MOCK_DATA.attendance.filter(a => a.student_id === user.id);
-  const studentMarks = MOCK_DATA.marks.filter(m => m.student_id === user.id);
-  const studentLeaveRequests = MOCK_DATA.leaveRequests.filter(l => l.student_id === user.id);
-
-  // Log the data to verify it's being filtered correctly
-  console.log('Student ID:', user.id);
-  console.log('Attendance Records:', studentAttendance);
-  console.log('Marks Records:', studentMarks);
-  console.log('Leave Requests:', studentLeaveRequests);
 
   return (
     <Layout>
@@ -100,72 +143,80 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <DashboardStats 
-          isTeacher={false}
-          attendanceRate={stats.attendanceRate}
-          averageMarks={stats.averageMarks}
-        />
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <>
+            {/* Stats Overview */}
+            <DashboardStats 
+              isTeacher={false}
+              attendanceRate={stats.attendanceRate}
+              averageMarks={stats.averageMarks}
+            />
 
-        {/* Tabs for different sections */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="attendance">My Attendance</TabsTrigger>
-            <TabsTrigger value="marks">My Marks</TabsTrigger>
-            <TabsTrigger value="leave">Leave Requests</TabsTrigger>
-          </TabsList>
-          
-          {/* Dashboard Tab Content - Overview of all */}
-          <TabsContent value="dashboard">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <AttendanceCard 
-                attendanceData={studentAttendance} 
-                title="My Attendance"
-              />
-              <MarksCard 
-                marksData={studentMarks} 
-                subjects={MOCK_DATA.subjects}
-                title="My Academic Performance"
-              />
-              <LeaveRequestCard 
-                leaveRequests={studentLeaveRequests}
-                title="My Leave Requests"
-              />
-            </div>
-          </TabsContent>
-          
-          {/* Attendance Tab Content */}
-          <TabsContent value="attendance">
-            <div className="grid grid-cols-1 gap-6">
-              <AttendanceCard 
-                attendanceData={studentAttendance} 
-                title="My Attendance"
-              />
-            </div>
-          </TabsContent>
-          
-          {/* Marks Tab Content */}
-          <TabsContent value="marks">
-            <div className="grid grid-cols-1 gap-6">
-              <MarksCard 
-                marksData={studentMarks} 
-                subjects={MOCK_DATA.subjects}
-                title="My Academic Performance"
-              />
-            </div>
-          </TabsContent>
-          
-          {/* Leave Requests Tab Content */}
-          <TabsContent value="leave">
-            <div className="grid grid-cols-1 gap-6">
-              <LeaveRequestCard 
-                leaveRequests={studentLeaveRequests}
-                title="My Leave Requests"
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+            {/* Tabs for different sections */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="attendance">My Attendance</TabsTrigger>
+                <TabsTrigger value="marks">My Marks</TabsTrigger>
+                <TabsTrigger value="leave">Leave Requests</TabsTrigger>
+              </TabsList>
+              
+              {/* Dashboard Tab Content - Overview of all */}
+              <TabsContent value="dashboard">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <AttendanceCard 
+                    attendanceData={studentAttendance} 
+                    title="My Attendance"
+                  />
+                  <MarksCard 
+                    marksData={studentMarks} 
+                    subjects={subjects}
+                    title="My Academic Performance"
+                  />
+                  <LeaveRequestCard 
+                    leaveRequests={studentLeaveRequests}
+                    title="My Leave Requests"
+                  />
+                </div>
+              </TabsContent>
+              
+              {/* Attendance Tab Content */}
+              <TabsContent value="attendance">
+                <div className="grid grid-cols-1 gap-6">
+                  <AttendanceCard 
+                    attendanceData={studentAttendance} 
+                    title="My Attendance"
+                  />
+                </div>
+              </TabsContent>
+              
+              {/* Marks Tab Content */}
+              <TabsContent value="marks">
+                <div className="grid grid-cols-1 gap-6">
+                  <MarksCard 
+                    marksData={studentMarks} 
+                    subjects={subjects}
+                    title="My Academic Performance"
+                  />
+                </div>
+              </TabsContent>
+              
+              {/* Leave Requests Tab Content */}
+              <TabsContent value="leave">
+                <div className="grid grid-cols-1 gap-6">
+                  <LeaveRequestCard 
+                    leaveRequests={studentLeaveRequests}
+                    title="My Leave Requests"
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
       </div>
     </Layout>
   );
