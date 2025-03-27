@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Layout } from '../components/Layout';
-import { MOCK_DATA, Attendance } from '../utils/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   CalendarDays, 
   Check, 
@@ -39,9 +39,12 @@ import { toast } from 'sonner';
 const AttendanceManagement = () => {
   const { user, isTeacher } = useAuth();
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10));
-  const [selectedClass, setSelectedClass] = useState(MOCK_DATA.classes[0]?.id || '');
+  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [selectedClass, setSelectedClass] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
   const [attendanceData, setAttendanceData] = useState<Record<string, 'present' | 'absent'>>({});
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Redirect if not a teacher
@@ -53,21 +56,65 @@ const AttendanceManagement = () => {
     return <Navigate to="/student" />;
   }
 
-  const students = MOCK_DATA.users.filter(u => u.role === 'student');
-  const classes = MOCK_DATA.classes;
+  // Fetch classes when component mounts
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('classes')
+          .select('id, name')
+          .order('name');
 
-  const filteredStudents = students.filter(student => 
-    student.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+        if (error) throw error;
+        
+        setClasses(data || []);
+        // Set the first class as default if available
+        if (data && data.length > 0) {
+          setSelectedClass(data[0].id);
+        }
+      } catch (error) {
+        console.error('Error fetching classes:', error);
+        toast.error('Failed to load classes');
+      }
+    };
+
+    fetchClasses();
+  }, []);
+
+  // Fetch students for selected class
+  useEffect(() => {
+    const fetchStudents = async () => {
+      if (!selectedClass) return;
+
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .eq('role', 'student')
+          // In a real app, you'd link students to classes
+          .limit(20);  // Limit to 20 students for now
+
+        if (error) throw error;
+        
+        setStudents(data || []);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching students:', error);
+        toast.error('Failed to load students');
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [selectedClass]);
 
   const handleDateChange = (value: string) => {
     setDate(value);
-    // In a real app, we would fetch attendance data for this date
   };
 
   const handleClassChange = (value: string) => {
     setSelectedClass(value);
-    // In a real app, we would fetch students for this class
   };
 
   const handleAttendanceChange = (studentId: string, status: 'present' | 'absent') => {
@@ -77,15 +124,35 @@ const AttendanceManagement = () => {
     }));
   };
 
-  const handleSaveAttendance = () => {
+  const handleSaveAttendance = async () => {
     setSaving(true);
     
-    // In a real app, this would save to Supabase
-    // Simulating API call
-    setTimeout(() => {
+    try {
+      // Prepare attendance records
+      const attendanceRecords = Object.entries(attendanceData).map(([studentId, status]) => ({
+        student_id: studentId,
+        class_id: selectedClass,
+        date: date,
+        status: status
+      }));
+
+      // Insert attendance records
+      const { error } = await supabase
+        .from('attendance')
+        .upsert(attendanceRecords, { 
+          onConflict: 'student_id,class_id,date' 
+        });
+
+      if (error) throw error;
+
       toast.success('Attendance saved successfully');
+      setAttendanceData({});  // Clear attendance data after saving
+    } catch (error) {
+      console.error('Error saving attendance:', error);
+      toast.error('Failed to save attendance');
+    } finally {
       setSaving(false);
-    }, 1000);
+    }
   };
 
   const handlePreviousDay = () => {
@@ -103,6 +170,11 @@ const AttendanceManagement = () => {
   const handleDownloadReport = () => {
     toast.success('Attendance report downloaded');
   };
+
+  // Filter students based on search query
+  const filteredStudents = students.filter(student => 
+    student.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <Layout>
@@ -225,88 +297,96 @@ const AttendanceManagement = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead className="w-48 text-center">Attendance</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((student, index) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                            {student.name.substring(0, 1).toUpperCase()}
-                          </div>
-                          <span>{student.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-center gap-2">
-                          <Button
-                            size="sm"
-                            variant={attendanceData[student.id] === 'present' ? 'default' : 'outline'}
-                            className={`w-24 ${
-                              attendanceData[student.id] === 'present' 
-                                ? 'bg-green-500 hover:bg-green-600' 
-                                : 'text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700'
-                            }`}
-                            onClick={() => handleAttendanceChange(student.id, 'present')}
-                          >
-                            <Check className="h-4 w-4 mr-1" /> Present
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={attendanceData[student.id] === 'absent' ? 'default' : 'outline'}
-                            className={`w-24 ${
-                              attendanceData[student.id] === 'absent' 
-                                ? 'bg-red-500 hover:bg-red-600' 
-                                : 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700'
-                            }`}
-                            onClick={() => handleAttendanceChange(student.id, 'absent')}
-                          >
-                            <X className="h-4 w-4 mr-1" /> Absent
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  
-                  {filteredStudents.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
-                        No students found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            
-            <div className="mt-4 flex justify-end">
-              <Button 
-                onClick={handleSaveAttendance} 
-                disabled={saving || Object.keys(attendanceData).length === 0}
-                className="flex items-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    <span>Save Attendance</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            {loading ? (
+              <div className="flex justify-center items-center h-24">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">#</TableHead>
+                        <TableHead>Student Name</TableHead>
+                        <TableHead className="w-48 text-center">Attendance</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((student, index) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                                {student.name.substring(0, 1).toUpperCase()}
+                              </div>
+                              <span>{student.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-center gap-2">
+                              <Button
+                                size="sm"
+                                variant={attendanceData[student.id] === 'present' ? 'default' : 'outline'}
+                                className={`w-24 ${
+                                  attendanceData[student.id] === 'present' 
+                                    ? 'bg-green-500 hover:bg-green-600' 
+                                    : 'text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700'
+                                }`}
+                                onClick={() => handleAttendanceChange(student.id, 'present')}
+                              >
+                                <Check className="h-4 w-4 mr-1" /> Present
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={attendanceData[student.id] === 'absent' ? 'default' : 'outline'}
+                                className={`w-24 ${
+                                  attendanceData[student.id] === 'absent' 
+                                    ? 'bg-red-500 hover:bg-red-600' 
+                                    : 'text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700'
+                                }`}
+                                onClick={() => handleAttendanceChange(student.id, 'absent')}
+                              >
+                                <X className="h-4 w-4 mr-1" /> Absent
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      
+                      {filteredStudents.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
+                            No students found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <Button 
+                    onClick={handleSaveAttendance} 
+                    disabled={saving || Object.keys(attendanceData).length === 0}
+                    className="flex items-center gap-2"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        <span>Save Attendance</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
