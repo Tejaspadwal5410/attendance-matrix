@@ -47,6 +47,8 @@ export default function SignupForm() {
   });
 
   const onSubmit = async (values: SignupFormValues) => {
+    if (isSubmitting) return; // Prevent multiple submissions
+    
     try {
       setIsSubmitting(true);
       await signUp(
@@ -56,7 +58,8 @@ export default function SignupForm() {
         values.role as UserRole
       );
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
+      // Error is already displayed via toast in the AuthContext
       console.error('Error during signup:', error);
     } finally {
       setIsSubmitting(false);
@@ -163,7 +166,11 @@ export default function SignupForm() {
             )}
           />
           
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isSubmitting}
+          >
             {isSubmitting ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>

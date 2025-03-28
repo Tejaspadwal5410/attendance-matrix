@@ -1,13 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserRole } from '@/utils/supabaseClient';
 import SignupForm from '@/components/SignupForm';
+import { toast } from 'sonner';
 
 export default function Index() {
   const [email, setEmail] = useState('');
@@ -17,7 +17,7 @@ export default function Index() {
   const navigate = useNavigate();
 
   // Redirect if user is already logged in
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       if (user.role === 'teacher') {
         navigate('/teacher');
@@ -29,10 +29,14 @@ export default function Index() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (loading) return; // Prevent multiple submissions
+    
     try {
+      setLoading(true);
       await signIn(email, password);
-    } catch (error) {
+      // No need to navigate here, useEffect will handle that when the user state updates
+    } catch (error: any) {
+      // Error is already displayed via toast in the AuthContext
       console.error('Login error:', error);
     } finally {
       setLoading(false);
@@ -72,6 +76,7 @@ export default function Index() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -85,9 +90,14 @@ export default function Index() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={loading}
+                >
                   {loading ? 'Logging in...' : 'Login'}
                 </Button>
               </form>

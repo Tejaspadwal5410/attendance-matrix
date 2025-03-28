@@ -78,6 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: profileData.role as UserRole,
               avatar_url: profileData.avatar_url
             });
+          } else {
+            console.error('Error fetching profile on auth change:', profileError);
+            setUser(null);
           }
         } else {
           setUser(null);
@@ -125,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       toast.error(error.message || 'Login failed');
       console.error('Login error:', error);
+      throw error; // Re-throw to allow handling in the component
     } finally {
       setLoading(false);
     }
@@ -134,24 +138,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
+      // Generate avatar URL if not provided
+      const finalAvatarUrl = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+      
       // Register with Supabase, including metadata for profiles table
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
             role,
-            avatar_url: avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+            avatar_url: finalAvatarUrl
           }
         }
       });
       
       if (error) throw error;
-      toast.success('Registration successful! Please check your email to verify your account.');
+      
+      if (data && data.user) {
+        toast.success('Registration successful! Please check your email to verify your account.');
+      } else {
+        toast.error('Something went wrong during registration.');
+      }
+      
+      return;
     } catch (error: any) {
       toast.error(error.message || 'Registration failed');
       console.error('Signup error:', error);
+      throw error; // Re-throw to allow handling in the component
     } finally {
       setLoading(false);
     }
