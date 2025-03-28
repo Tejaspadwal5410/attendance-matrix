@@ -1,20 +1,11 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { supabase, User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';
+import { AuthContextType } from '../types/auth';
+import { fetchUserProfile, getDemoUser, getRoleFromUser } from '../utils/authUtils';
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  signUp: (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => Promise<void>;
-  isTeacher: () => boolean;
-  isStudent: () => boolean;
-  isDemoUser: () => boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -31,25 +22,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // Get user profile data from our profiles table
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profileError || !profileData) {
-            console.error('Error fetching user profile:', profileError);
-            setUser(null);
-          } else {
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              name: profileData.name,
-              role: profileData.role as UserRole,
-              avatar_url: profileData.avatar_url
-            });
-          }
+          const profileData = await fetchUserProfile(session.user.id);
+          setUser(profileData);
         } else {
           setUser(null);
         }
@@ -65,24 +39,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session) {
-          // Get user profile data from our profiles table
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (!profileError && profileData) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              name: profileData.name,
-              role: profileData.role as UserRole,
-              avatar_url: profileData.avatar_url
-            });
+          const profileData = await fetchUserProfile(session.user.id);
+          if (profileData) {
+            setUser(profileData);
             setIsDemoAccount(false);
           } else {
-            console.error('Error fetching profile on auth change:', profileError);
             setUser(null);
           }
         } else if (!isDemoAccount) {
@@ -105,22 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       
       // Handle demo accounts with exact matching for both email and password
-      if (email === 'teacher@example.com' && password === 'password') {
-        // Set mock teacher user
-        const teacherUser = MOCK_DATA.users.find(u => u.role === 'teacher');
-        if (teacherUser) {
-          setUser(teacherUser);
+      if ((email === 'teacher@example.com' || email === 'student@example.com') && password === 'password') {
+        const demoUser = getDemoUser(email);
+        if (demoUser) {
+          setUser(demoUser);
           setIsDemoAccount(true);
-          toast.success('Teacher demo account logged in successfully');
-          return;
-        }
-      } else if (email === 'student@example.com' && password === 'password') {
-        // Set mock student user
-        const studentUser = MOCK_DATA.users.find(u => u.role === 'student');
-        if (studentUser) {
-          setUser(studentUser);
-          setIsDemoAccount(true);
-          toast.success('Student demo account logged in successfully');
+          toast.success(`${demoUser.role} demo account logged in successfully`);
           return;
         }
       }
@@ -239,10 +190,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export { useAuth } from '../hooks/useAuth';
