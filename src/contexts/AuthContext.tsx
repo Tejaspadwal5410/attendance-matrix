@@ -123,11 +123,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Regular Supabase auth for non-demo accounts
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
-      if (error) throw error;
-      toast.success('Logged in successfully');
+      if (error) {
+        console.error('Login error details:', error);
+        toast.error(error.message || 'Login failed');
+        throw error; // Re-throw to allow handling in the component
+      } else {
+        toast.success('Logged in successfully');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
       console.error('Login error:', error);
+      toast.error(error.message || 'Login failed');
       throw error; // Re-throw to allow handling in the component
     } finally {
       setLoading(false);
@@ -154,18 +159,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Signup error details:', error);
+        toast.error(error.message || 'Registration failed');
+        throw error; // Re-throw to allow handling in the component
+      }
       
       if (data && data.user) {
         toast.success('Registration successful! Please check your email to verify your account.');
       } else {
         toast.error('Something went wrong during registration.');
+        throw new Error('Registration failed - no user data returned');
       }
       
       return;
     } catch (error: any) {
-      toast.error(error.message || 'Registration failed');
       console.error('Signup error:', error);
+      toast.error(error.message || 'Registration failed');
       throw error; // Re-throw to allow handling in the component
     } finally {
       setLoading(false);
@@ -176,12 +186,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setUser(null);
-      toast.info('Logged out successfully');
+      if (error) {
+        console.error('Logout error details:', error);
+        toast.error(error.message || 'Logout failed');
+        throw error;
+      } else {
+        setUser(null);
+        toast.info('Logged out successfully');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Logout failed');
       console.error('Logout error:', error);
+      toast.error(error.message || 'Logout failed');
+      throw error;
     } finally {
       setLoading(false);
     }

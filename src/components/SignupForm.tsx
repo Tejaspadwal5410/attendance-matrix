@@ -47,20 +47,40 @@ export default function SignupForm() {
   });
 
   const onSubmit = async (values: SignupFormValues) => {
-    if (isSubmitting) return; // Prevent multiple submissions
+    // Prevent multiple submissions
+    if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
+      
+      console.log('Attempting signup with:', { 
+        email: values.email, 
+        name: values.name, 
+        role: values.role 
+      });
+      
       await signUp(
         values.email,
         values.password,
         values.name,
         values.role as UserRole
       );
+      
+      // Reset form on success
       form.reset();
+      
+      toast.success('Account created successfully! Please check your email to verify your account.');
     } catch (error: any) {
+      console.error('Signup submission error:', error);
       // Error is already displayed via toast in the AuthContext
-      console.error('Error during signup:', error);
+      
+      // Highlight form fields that might be causing the issue
+      if (error.message?.includes('email')) {
+        form.setError('email', { 
+          type: 'manual', 
+          message: 'This email may already be in use'
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -82,7 +102,12 @@ export default function SignupForm() {
               <FormItem>
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" {...field} />
+                  <Input 
+                    placeholder="John Doe" 
+                    {...field} 
+                    disabled={isSubmitting}
+                    className={isSubmitting ? "opacity-70" : ""}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -96,7 +121,13 @@ export default function SignupForm() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="you@example.com" {...field} />
+                  <Input 
+                    type="email" 
+                    placeholder="you@example.com" 
+                    {...field} 
+                    disabled={isSubmitting}
+                    className={isSubmitting ? "opacity-70" : ""}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -110,7 +141,13 @@ export default function SignupForm() {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    {...field} 
+                    disabled={isSubmitting}
+                    className={isSubmitting ? "opacity-70" : ""}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -124,7 +161,13 @@ export default function SignupForm() {
               <FormItem>
                 <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
+                  <Input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    {...field} 
+                    disabled={isSubmitting}
+                    className={isSubmitting ? "opacity-70" : ""}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -142,20 +185,27 @@ export default function SignupForm() {
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                     className="flex space-x-4"
+                    disabled={isSubmitting}
                   >
                     <FormItem className="flex items-center space-x-2 space-y-0">
                       <FormControl>
-                        <RadioGroupItem value="student" />
+                        <RadioGroupItem 
+                          value="student" 
+                          disabled={isSubmitting}
+                        />
                       </FormControl>
-                      <FormLabel className="font-normal cursor-pointer">
+                      <FormLabel className={`font-normal cursor-pointer ${isSubmitting ? "opacity-70" : ""}`}>
                         Student
                       </FormLabel>
                     </FormItem>
                     <FormItem className="flex items-center space-x-2 space-y-0">
                       <FormControl>
-                        <RadioGroupItem value="teacher" />
+                        <RadioGroupItem 
+                          value="teacher" 
+                          disabled={isSubmitting}
+                        />
                       </FormControl>
-                      <FormLabel className="font-normal cursor-pointer">
+                      <FormLabel className={`font-normal cursor-pointer ${isSubmitting ? "opacity-70" : ""}`}>
                         Teacher
                       </FormLabel>
                     </FormItem>

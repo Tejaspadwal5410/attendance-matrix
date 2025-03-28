@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 export default function Index() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
@@ -29,17 +29,44 @@ export default function Index() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return; // Prevent multiple submissions
+    
+    // Validation
+    if (!email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    
+    if (!password) {
+      toast.error('Password is required');
+      return;
+    }
+    
+    // Prevent multiple submissions
+    if (isSubmitting) return;
     
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       await signIn(email, password);
       // No need to navigate here, useEffect will handle that when the user state updates
     } catch (error: any) {
-      // Error is already displayed via toast in the AuthContext
-      console.error('Login error:', error);
+      console.error('Login attempt failed:', error);
+      // Toast is already displayed in the AuthContext
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleDemoLogin = async (role: 'teacher' | 'student') => {
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      const demoEmail = role === 'teacher' ? 'teacher@example.com' : 'student@example.com';
+      await signIn(demoEmail, 'password');
+    } catch (error) {
+      console.error(`Demo login error (${role}):`, error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -76,7 +103,9 @@ export default function Index() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={loading}
+                    disabled={isSubmitting}
+                    className={isSubmitting ? "opacity-70" : ""}
+                    aria-describedby="email-error"
                   />
                 </div>
                 <div className="space-y-2">
@@ -90,15 +119,17 @@ export default function Index() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={loading}
+                    disabled={isSubmitting}
+                    className={isSubmitting ? "opacity-70" : ""}
+                    aria-describedby="password-error"
                   />
                 </div>
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={loading}
+                  disabled={isSubmitting}
                 >
-                  {loading ? 'Logging in...' : 'Login'}
+                  {isSubmitting ? 'Logging in...' : 'Login'}
                 </Button>
               </form>
             </TabsContent>
@@ -109,11 +140,29 @@ export default function Index() {
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <div className="text-xs text-gray-500">
+        <CardFooter className="flex flex-col">
+          <div className="text-xs text-gray-500 mb-3 w-full">
             <p>Demo Accounts:</p>
-            <p>Teacher: teacher@example.com / password</p>
-            <p>Student: student@example.com / password</p>
+            <div className="flex gap-2 mt-1">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => handleDemoLogin('teacher')}
+                disabled={isSubmitting}
+                className="text-xs flex-1"
+              >
+                Login as Teacher
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => handleDemoLogin('student')}
+                disabled={isSubmitting}
+                className="text-xs flex-1"
+              >
+                Login as Student
+              </Button>
+            </div>
           </div>
         </CardFooter>
       </Card>
