@@ -9,9 +9,10 @@ import { MarksCard } from '../components/MarksCard';
 import { LeaveRequestCard } from '../components/LeaveRequestCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { MOCK_DATA } from '../utils/supabaseClient';
 
 const TeacherDashboard = () => {
-  const { user, isTeacher } = useAuth();
+  const { user, isTeacher, isDemoUser } = useAuth();
 
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -33,6 +34,56 @@ const TeacherDashboard = () => {
     const fetchTeacherData = async () => {
       try {
         setLoading(true);
+
+        // If using a demo account, load mock data instead of fetching from Supabase
+        if (isDemoUser()) {
+          console.log("Loading demo data for teacher dashboard");
+          
+          // Use mock data
+          const mockAttendance = MOCK_DATA.attendance || [];
+          const mockMarks = MOCK_DATA.marks || [];
+          const mockLeaveRequests = MOCK_DATA.leaveRequests || [];
+          const mockSubjects = MOCK_DATA.subjects || [];
+          const mockStudents = MOCK_DATA.users.filter(u => u.role === 'student') || [];
+          const mockClasses = MOCK_DATA.classes || [];
+          
+          // Calculate stats from mock data
+          const totalAttendanceRecords = mockAttendance.length;
+          const presentRecords = mockAttendance.filter(a => a.status === 'present').length;
+          const attendanceRate = totalAttendanceRecords > 0 
+            ? (presentRecords / totalAttendanceRecords) * 100 
+            : 0;
+          
+          const totalMarks = mockMarks.reduce((sum, mark) => sum + mark.marks, 0);
+          const averageMarks = mockMarks.length > 0 
+            ? totalMarks / mockMarks.length 
+            : 0;
+          
+          const pendingLeaves = mockLeaveRequests.filter(lr => lr.status === 'pending').length;
+          
+          // Update state with mock data
+          setAttendance(mockAttendance);
+          setMarks(mockMarks);
+          setLeaveRequests(mockLeaveRequests);
+          setSubjects(mockSubjects);
+          
+          setStats({
+            totalStudents: mockStudents.length,
+            totalClasses: mockClasses.length,
+            attendanceRate: parseFloat(attendanceRate.toFixed(1)),
+            averageMarks: parseFloat(averageMarks.toFixed(1)),
+            pendingLeaves
+          });
+          
+          toast.success("Demo data loaded successfully");
+          
+          console.log("Demo teacher data loaded");
+          console.log("Mock Attendance:", mockAttendance);
+          console.log("Mock Marks:", mockMarks);
+          console.log("Mock Leave Requests:", mockLeaveRequests);
+          
+          return;
+        }
 
         // Fetch classes taught by this teacher
         const { data: classesData, error: classesError } = await supabase
@@ -135,10 +186,21 @@ const TeacherDashboard = () => {
     };
 
     fetchTeacherData();
-  }, [user]);
+  }, [user, isDemoUser]);
 
   const handleApproveLeave = async (id) => {
     try {
+      // For demo accounts, update the state directly without database call
+      if (isDemoUser()) {
+        setLeaveRequests(leaveRequests.map(request => 
+          request.id === id ? { ...request, status: 'approved' } : request
+        ));
+        
+        toast.success('Leave request approved successfully');
+        return;
+      }
+      
+      // For real accounts, update the database
       const { error } = await supabase
         .from('leave_requests')
         .update({ status: 'approved' })
@@ -160,6 +222,17 @@ const TeacherDashboard = () => {
 
   const handleRejectLeave = async (id) => {
     try {
+      // For demo accounts, update the state directly without database call
+      if (isDemoUser()) {
+        setLeaveRequests(leaveRequests.map(request => 
+          request.id === id ? { ...request, status: 'rejected' } : request
+        ));
+        
+        toast.success('Leave request rejected successfully');
+        return;
+      }
+      
+      // For real accounts, update the database
       const { error } = await supabase
         .from('leave_requests')
         .update({ status: 'rejected' })

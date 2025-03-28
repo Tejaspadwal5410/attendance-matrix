@@ -53,15 +53,8 @@ export interface LeaveRequest {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-// Mock data for development until Supabase auth is fully set up
+// Enhanced mock data for development
 export const MOCK_DATA = {
-  currentUser: {
-    id: '1',
-    email: 'user@example.com',
-    name: 'John Doe',
-    role: 'student' as UserRole,
-    avatar_url: 'https://i.pravatar.cc/150?img=1'
-  },
   users: [
     {
       id: '1',
@@ -93,7 +86,10 @@ export const MOCK_DATA = {
     { id: '2', student_id: '1', class_id: '1', date: '2023-06-02', status: 'present' as const },
     { id: '3', student_id: '1', class_id: '1', date: '2023-06-03', status: 'absent' as const },
     { id: '4', student_id: '1', class_id: '1', date: '2023-06-04', status: 'present' as const },
-    { id: '5', student_id: '1', class_id: '1', date: '2023-06-05', status: 'present' as const }
+    { id: '5', student_id: '1', class_id: '1', date: '2023-06-05', status: 'present' as const },
+    { id: '6', student_id: '1', class_id: '2', date: '2023-06-06', status: 'present' as const },
+    { id: '7', student_id: '1', class_id: '2', date: '2023-06-07', status: 'absent' as const },
+    { id: '8', student_id: '1', class_id: '2', date: '2023-06-08', status: 'present' as const }
   ],
   marks: [
     { id: '1', student_id: '1', subject_id: '1', marks: 85, exam_type: 'midterm' as const },
@@ -101,7 +97,9 @@ export const MOCK_DATA = {
     { id: '3', student_id: '1', subject_id: '3', marks: 92, exam_type: 'midterm' as const },
     { id: '4', student_id: '1', subject_id: '1', marks: 79, exam_type: 'final' as const },
     { id: '5', student_id: '1', subject_id: '2', marks: 81, exam_type: 'final' as const },
-    { id: '6', student_id: '1', subject_id: '3', marks: 88, exam_type: 'final' as const }
+    { id: '6', student_id: '1', subject_id: '3', marks: 88, exam_type: 'final' as const },
+    { id: '7', student_id: '1', subject_id: '4', marks: 75, exam_type: 'midterm' as const },
+    { id: '8', student_id: '1', subject_id: '4', marks: 82, exam_type: 'final' as const }
   ],
   leaveRequests: [
     { 
@@ -117,6 +115,20 @@ export const MOCK_DATA = {
       date: '2023-06-15', 
       reason: 'Family function', 
       status: 'pending' as const 
+    },
+    { 
+      id: '3', 
+      student_id: '1', 
+      date: '2023-06-20', 
+      reason: 'Doctor appointment', 
+      status: 'pending' as const 
+    },
+    { 
+      id: '4', 
+      student_id: '1', 
+      date: '2023-06-25', 
+      reason: 'Religious ceremony', 
+      status: 'rejected' as const 
     }
   ]
 };

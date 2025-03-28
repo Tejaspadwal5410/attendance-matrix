@@ -11,6 +11,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => Promise<void>;
   isTeacher: () => boolean;
   isStudent: () => boolean;
+  isDemoUser: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDemoAccount, setIsDemoAccount] = useState(false);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -78,11 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: profileData.role as UserRole,
               avatar_url: profileData.avatar_url
             });
+            setIsDemoAccount(false);
           } else {
             console.error('Error fetching profile on auth change:', profileError);
             setUser(null);
           }
-        } else {
+        } else if (!isDemoAccount) {
           setUser(null);
         }
         setLoading(false);
@@ -95,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isDemoAccount]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -107,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const teacherUser = MOCK_DATA.users.find(u => u.role === 'teacher');
         if (teacherUser) {
           setUser(teacherUser);
+          setIsDemoAccount(true);
           toast.success('Teacher demo account logged in successfully');
           return;
         }
@@ -115,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const studentUser = MOCK_DATA.users.find(u => u.role === 'student');
         if (studentUser) {
           setUser(studentUser);
+          setIsDemoAccount(true);
           toast.success('Student demo account logged in successfully');
           return;
         }
@@ -129,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error; // Re-throw to allow handling in the component
       } else {
         toast.success('Logged in successfully');
+        setIsDemoAccount(false);
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -185,6 +191,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      // If it's a demo account, just clear the user state
+      if (isDemoAccount) {
+        setUser(null);
+        setIsDemoAccount(false);
+        toast.info('Logged out successfully');
+        return;
+      }
+      
+      // Regular Supabase signout for non-demo accounts
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Logout error details:', error);
@@ -205,9 +221,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const isTeacher = () => user?.role === 'teacher';
   const isStudent = () => user?.role === 'student';
+  const isDemoUser = () => isDemoAccount;
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut, signUp, isTeacher, isStudent }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      signIn, 
+      signOut, 
+      signUp, 
+      isTeacher, 
+      isStudent, 
+      isDemoUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );

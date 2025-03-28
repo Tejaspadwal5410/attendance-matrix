@@ -62,7 +62,9 @@ export default function Index() {
     try {
       setIsSubmitting(true);
       const demoEmail = role === 'teacher' ? 'teacher@example.com' : 'student@example.com';
+      console.log(`Attempting demo login as ${role} with email ${demoEmail}`);
       await signIn(demoEmail, 'password');
+      console.log(`Demo login successful as ${role}`);
     } catch (error) {
       console.error(`Demo login error (${role}):`, error);
     } finally {
