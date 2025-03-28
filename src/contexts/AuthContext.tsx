@@ -8,7 +8,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  signUp: (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => Promise<{ error?: { message: string } }>;
+  signUp: (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => Promise<void>;
   isTeacher: () => boolean;
   isStudent: () => boolean;
 }
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       
       // Register with Supabase, including metadata for profiles table
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -147,14 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
       
-      if (error) {
-        return { error };
-      }
-      
-      return { error: undefined };
+      if (error) throw error;
+      toast.success('Registration successful! Please check your email to verify your account.');
     } catch (error: any) {
+      toast.error(error.message || 'Registration failed');
       console.error('Signup error:', error);
-      return { error: { message: error.message || 'Registration failed' } };
     } finally {
       setLoading(false);
     }

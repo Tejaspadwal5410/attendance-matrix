@@ -49,22 +49,15 @@ export default function SignupForm() {
   const onSubmit = async (values: SignupFormValues) => {
     try {
       setIsSubmitting(true);
-      const result = await signUp(
+      await signUp(
         values.email,
         values.password,
         values.name,
         values.role as UserRole
       );
-      
-      if (result && !result.error) {
-        toast.success('Account created successfully! Check your email to confirm your account.');
-        form.reset();
-      } else if (result && result.error) {
-        toast.error(result.error.message || 'Error during signup');
-      }
-    } catch (error: any) {
+      form.reset();
+    } catch (error) {
       console.error('Error during signup:', error);
-      toast.error(error.message || 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
