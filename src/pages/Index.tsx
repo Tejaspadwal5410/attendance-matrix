@@ -46,16 +46,11 @@ export default function Index() {
     
     try {
       setIsSubmitting(true);
-      const { error } = await signIn(email, password);
-      
-      if (error) {
-        console.error('Login error:', error);
-        // Toast is already displayed in the AuthContext
-      }
+      await signIn(email, password);
       // No need to navigate here, useEffect will handle that when the user state updates
     } catch (error: any) {
       console.error('Login attempt failed:', error);
-      toast.error(error.message || 'An unexpected error occurred');
+      // Toast is already displayed in the AuthContext
     } finally {
       setIsSubmitting(false);
     }
@@ -68,18 +63,10 @@ export default function Index() {
       setIsSubmitting(true);
       const demoEmail = role === 'teacher' ? 'teacher@example.com' : 'student@example.com';
       console.log(`Attempting demo login as ${role} with email ${demoEmail}`);
-      
-      const { error } = await signIn(demoEmail, 'password');
-      
-      if (error) {
-        console.error(`Demo login error (${role}):`, error);
-        toast.error('Failed to log in with demo account');
-      } else {
-        console.log(`Demo login successful as ${role}`);
-      }
-    } catch (error: any) {
+      await signIn(demoEmail, 'password');
+      console.log(`Demo login successful as ${role}`);
+    } catch (error) {
       console.error(`Demo login error (${role}):`, error);
-      toast.error(error.message || 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
