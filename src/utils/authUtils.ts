@@ -15,9 +15,14 @@ export async function fetchUserProfile(userId: string): Promise<User | null> {
       return null;
     } 
 
+    // Since email is not in the profiles table, we need to get it from the session
+    // or just leave it empty as it's not displayed in the UI
+    const { data: { session } } = await supabase.auth.getSession();
+    const email = session?.user?.email || '';
+
     return {
       id: userId,
-      email: profileData.email || '',
+      email: email,
       name: profileData.name,
       role: profileData.role as UserRole,
       avatar_url: profileData.avatar_url
