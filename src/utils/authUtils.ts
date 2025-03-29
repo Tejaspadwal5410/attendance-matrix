@@ -52,7 +52,7 @@ export function getRoleFromUser(user: User | null): {
   };
 }
 
-// Function to fetch students from the database
+// New function to fetch students from the database
 export async function fetchStudents(): Promise<User[]> {
   try {
     const { data, error } = await supabase
@@ -79,7 +79,7 @@ export async function fetchStudents(): Promise<User[]> {
   }
 }
 
-// Function to fetch classes from the database
+// New function to fetch classes from the database
 export async function fetchClasses(): Promise<any[]> {
   try {
     const { data, error } = await supabase
@@ -98,7 +98,7 @@ export async function fetchClasses(): Promise<any[]> {
   }
 }
 
-// Function to save attendance records to the database
+// New function to save attendance records to the database
 export async function saveAttendanceRecords(
   attendanceData: Record<string, 'present' | 'absent'>, 
   date: string, 
@@ -136,7 +136,7 @@ export async function saveAttendanceRecords(
   }
 }
 
-// Function to fetch attendance records for a specific date and class
+// New function to fetch attendance records for a specific date and class
 export async function fetchAttendanceRecords(date: string, classId: string): Promise<any[]> {
   try {
     const { data, error } = await supabase
@@ -153,187 +153,6 @@ export async function fetchAttendanceRecords(date: string, classId: string): Pro
     return data;
   } catch (error) {
     console.error('Error fetching attendance records:', error);
-    return [];
-  }
-}
-
-// New function to save marks to the database
-export async function saveMarks(
-  studentId: string,
-  subjectId: string,
-  marks: number,
-  examType: 'midterm' | 'final' | 'assignment' | 'quiz'
-): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('marks')
-      .upsert(
-        {
-          student_id: studentId,
-          subject_id: subjectId,
-          marks,
-          exam_type: examType
-        },
-        {
-          onConflict: 'student_id,subject_id,exam_type',
-          ignoreDuplicates: false
-        }
-      );
-
-    if (error) {
-      console.error('Error saving marks:', error);
-      toast.error('Failed to save marks');
-      return false;
-    }
-
-    toast.success('Marks saved successfully');
-    return true;
-  } catch (error) {
-    console.error('Error saving marks:', error);
-    toast.error('An unexpected error occurred');
-    return false;
-  }
-}
-
-// Function to fetch marks for a specific student and subject
-export async function fetchStudentMarks(studentId: string, subjectId?: string): Promise<any[]> {
-  try {
-    let query = supabase
-      .from('marks')
-      .select('*, subjects(name)')
-      .eq('student_id', studentId);
-    
-    if (subjectId) {
-      query = query.eq('subject_id', subjectId);
-    }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching student marks:', error);
-      return [];
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching student marks:', error);
-    return [];
-  }
-}
-
-// Function to fetch subjects for a class
-export async function fetchSubjectsForClass(classId: string): Promise<any[]> {
-  try {
-    const { data, error } = await supabase
-      .from('subjects')
-      .select('*')
-      .eq('class_id', classId);
-    
-    if (error) {
-      console.error('Error fetching subjects:', error);
-      return [];
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching subjects:', error);
-    return [];
-  }
-}
-
-// Function to submit a leave request
-export async function submitLeaveRequest(
-  studentId: string,
-  date: string,
-  reason: string
-): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('leave_requests')
-      .insert({
-        student_id: studentId,
-        date,
-        reason,
-        status: 'pending'
-      });
-    
-    if (error) {
-      console.error('Error submitting leave request:', error);
-      toast.error('Failed to submit leave request');
-      return false;
-    }
-    
-    toast.success('Leave request submitted successfully');
-    return true;
-  } catch (error) {
-    console.error('Error submitting leave request:', error);
-    toast.error('An unexpected error occurred');
-    return false;
-  }
-}
-
-// Function to update the status of a leave request
-export async function updateLeaveRequestStatus(
-  requestId: string,
-  status: 'approved' | 'rejected'
-): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('leave_requests')
-      .update({ status })
-      .eq('id', requestId);
-    
-    if (error) {
-      console.error('Error updating leave request:', error);
-      toast.error('Failed to update leave request');
-      return false;
-    }
-    
-    toast.success(`Leave request ${status} successfully`);
-    return true;
-  } catch (error) {
-    console.error('Error updating leave request:', error);
-    toast.error('An unexpected error occurred');
-    return false;
-  }
-}
-
-// Function to fetch leave requests for a student
-export async function fetchStudentLeaveRequests(studentId: string): Promise<any[]> {
-  try {
-    const { data, error } = await supabase
-      .from('leave_requests')
-      .select('*')
-      .eq('student_id', studentId);
-    
-    if (error) {
-      console.error('Error fetching student leave requests:', error);
-      return [];
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching student leave requests:', error);
-    return [];
-  }
-}
-
-// Function to fetch all leave requests for a teacher
-export async function fetchAllLeaveRequests(): Promise<any[]> {
-  try {
-    const { data, error } = await supabase
-      .from('leave_requests')
-      .select('*, profiles(name)')
-      .order('date', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching leave requests:', error);
-      return [];
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching leave requests:', error);
     return [];
   }
 }

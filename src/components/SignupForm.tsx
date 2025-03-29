@@ -59,29 +59,28 @@ export default function SignupForm() {
         role: values.role 
       });
       
-      const { error } = await signUp(
+      await signUp(
         values.email,
         values.password,
         values.name,
         values.role as UserRole
       );
       
-      if (!error) {
-        // Reset form on success
-        form.reset();
-        toast.success('Account created successfully! Please check your email to verify your account.');
-      } else {
-        // Highlight form fields that might be causing the issue
-        if (error.message?.includes('email')) {
-          form.setError('email', { 
-            type: 'manual', 
-            message: 'This email may already be in use'
-          });
-        }
-      }
+      // Reset form on success
+      form.reset();
+      
+      toast.success('Account created successfully! Please check your email to verify your account.');
     } catch (error: any) {
       console.error('Signup submission error:', error);
       // Error is already displayed via toast in the AuthContext
+      
+      // Highlight form fields that might be causing the issue
+      if (error.message?.includes('email')) {
+        form.setError('email', { 
+          type: 'manual', 
+          message: 'This email may already be in use'
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
