@@ -51,3 +51,108 @@ export function getRoleFromUser(user: User | null): {
     isStudent: user?.role === 'student'
   };
 }
+
+// New function to fetch students from the database
+export async function fetchStudents(): Promise<User[]> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'student');
+    
+    if (error) {
+      console.error('Error fetching students:', error);
+      return [];
+    }
+    
+    // Map the profile data to User type
+    return data.map(profile => ({
+      id: profile.id,
+      email: '', // Email not stored in profiles table
+      name: profile.name,
+      role: profile.role as UserRole,
+      avatar_url: profile.avatar_url
+    }));
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    return [];
+  }
+}
+
+// New function to fetch classes from the database
+export async function fetchClasses(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('classes')
+      .select('*');
+    
+    if (error) {
+      console.error('Error fetching classes:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching classes:', error);
+    return [];
+  }
+}
+
+// New function to save attendance records to the database
+export async function saveAttendanceRecords(
+  attendanceData: Record<string, 'present' | 'absent'>, 
+  date: string, 
+  classId: string
+): Promise<boolean> {
+  try {
+    // First, create an array of attendance records from the data
+    const records = Object.entries(attendanceData).map(([studentId, status]) => ({
+      student_id: studentId,
+      class_id: classId,
+      date,
+      status
+    }));
+    
+    // Insert the records into the database
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(records, { 
+        onConflict: 'student_id,class_id,date',
+        ignoreDuplicates: false 
+      });
+    
+    if (error) {
+      console.error('Error saving attendance records:', error);
+      toast.error('Failed to save attendance records');
+      return false;
+    }
+    
+    toast.success('Attendance records saved successfully');
+    return true;
+  } catch (error) {
+    console.error('Error saving attendance records:', error);
+    toast.error('An unexpected error occurred');
+    return false;
+  }
+}
+
+// New function to fetch attendance records for a specific date and class
+export async function fetchAttendanceRecords(date: string, classId: string): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('date', date)
+      .eq('class_id', classId);
+    
+    if (error) {
+      console.error('Error fetching attendance records:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching attendance records:', error);
+    return [];
+  }
+}
