@@ -46,12 +46,17 @@ export default function Index() {
     
     try {
       setIsSubmitting(true);
-      await signIn(email, password);
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        // Error is already displayed via toast in the AuthContext
+        console.error('Login attempt failed:', error);
+        setIsSubmitting(false);
+      }
       // No need to navigate here, useEffect will handle that when the user state updates
     } catch (error: any) {
-      console.error('Login attempt failed:', error);
-      // Toast is already displayed in the AuthContext
-    } finally {
+      console.error('Login attempt exception:', error);
+      // Ensure we reset the submitting state in case of exceptions
       setIsSubmitting(false);
     }
   };
@@ -63,11 +68,14 @@ export default function Index() {
       setIsSubmitting(true);
       const demoEmail = role === 'teacher' ? 'teacher@example.com' : 'student@example.com';
       console.log(`Attempting demo login as ${role} with email ${demoEmail}`);
-      await signIn(demoEmail, 'password');
-      console.log(`Demo login successful as ${role}`);
+      const { error } = await signIn(demoEmail, 'password');
+      
+      if (error) {
+        console.error(`Demo login error (${role}):`, error);
+        setIsSubmitting(false);
+      }
     } catch (error) {
-      console.error(`Demo login error (${role}):`, error);
-    } finally {
+      console.error(`Demo login exception (${role}):`, error);
       setIsSubmitting(false);
     }
   };
