@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(demoUser);
           setIsDemoAccount(true);
           toast.success(`${demoUser.role} demo account logged in successfully`);
-          return;
+          return { error: undefined };
         }
       }
       
@@ -82,15 +82,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Login error details:', error);
         toast.error(error.message || 'Login failed');
-        throw error; // Re-throw to allow handling in the component
+        return { error: error as unknown as Error };
       } else {
         toast.success('Logged in successfully');
         setIsDemoAccount(false);
+        return { error: undefined };
       }
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Login failed');
-      throw error; // Re-throw to allow handling in the component
+      return { error };
     } finally {
       setLoading(false);
     }
@@ -119,21 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Signup error details:', error);
         toast.error(error.message || 'Registration failed');
-        throw error; // Re-throw to allow handling in the component
+        return { error: error as unknown as Error };
       }
       
       if (data && data.user) {
         toast.success('Registration successful! Please check your email to verify your account.');
+        return { error: undefined };
       } else {
+        const customError = new Error('Registration failed - no user data returned');
         toast.error('Something went wrong during registration.');
-        throw new Error('Registration failed - no user data returned');
+        return { error: customError };
       }
-      
-      return;
     } catch (error: any) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Registration failed');
-      throw error; // Re-throw to allow handling in the component
+      return { error };
     } finally {
       setLoading(false);
     }
@@ -148,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setIsDemoAccount(false);
         toast.info('Logged out successfully');
-        return;
+        return { error: undefined };
       }
       
       // Regular Supabase signout for non-demo accounts
@@ -156,15 +157,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Logout error details:', error);
         toast.error(error.message || 'Logout failed');
-        throw error;
+        return { error: error as unknown as Error };
       } else {
         setUser(null);
         toast.info('Logged out successfully');
+        return { error: undefined };
       }
     } catch (error: any) {
       console.error('Logout error:', error);
       toast.error(error.message || 'Logout failed');
-      throw error;
+      return { error };
     } finally {
       setLoading(false);
     }
