@@ -1,13 +1,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Layout } from '../components/Layout';
 import { DashboardStats } from '../components/Dashboard';
 import { AttendanceCard } from '../components/AttendanceCard';
 import { MarksCard } from '../components/MarksCard';
 import { LeaveRequestCard } from '../components/LeaveRequestCard';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, MOCK_DATA } from '@/utils/supabaseClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 

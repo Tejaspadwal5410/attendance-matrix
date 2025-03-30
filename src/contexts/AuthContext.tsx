@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from 'react';
 import { supabase, User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';
@@ -12,13 +11,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isDemoAccount, setIsDemoAccount] = useState(false);
 
-  // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
         setLoading(true);
         
-        // Check if there's an active session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
@@ -39,7 +36,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Setup auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session) {
@@ -59,7 +55,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     checkSession();
 
-    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
@@ -69,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      // Handle demo accounts with exact matching for both email and password
       if ((email === 'teacher@example.com' || email === 'student@example.com') && password === 'password') {
         const demoUser = getDemoUser(email);
         if (demoUser) {
@@ -80,7 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      // Regular Supabase auth for non-demo accounts
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
@@ -105,10 +98,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      // Generate avatar URL if not provided
       const finalAvatarUrl = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
       
-      // Register with Supabase, including metadata for profiles table
       const { error, data } = await supabase.auth.signUp({
         email,
         password,
@@ -148,7 +139,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       
-      // If it's a demo account, just clear the user state
       if (isDemoAccount) {
         setUser(null);
         setIsDemoAccount(false);
@@ -156,7 +146,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: null };
       }
       
-      // Regular Supabase signout for non-demo accounts
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Logout error details:', error);
