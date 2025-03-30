@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect } from 'react';
 import { supabase, User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';

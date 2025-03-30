@@ -22,6 +22,16 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { MOCK_DATA } from '@/utils/supabaseClient';
+
+type Mark = {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  marks: number;
+  exam_type: 'midterm' | 'final' | 'assignment' | 'quiz';
+  created_at: string;
+};
 
 const MarksManagement = () => {
   const { user, isTeacher } = useAuth();
