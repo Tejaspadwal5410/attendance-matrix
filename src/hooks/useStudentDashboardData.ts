@@ -105,25 +105,44 @@ export const useStudentDashboardData = (userId: string | undefined) => {
 
         if (subjectsError) throw subjectsError;
 
+        // Convert database types to our defined types to fix type errors
+        const typedAttendanceData: Attendance[] = attendanceData ? 
+          attendanceData.map(item => ({
+            ...item,
+            status: item.status as 'present' | 'absent'
+          })) : [];
+        
+        const typedMarksData: Mark[] = marksData ? 
+          marksData.map(item => ({
+            ...item,
+            exam_type: item.exam_type as 'midterm' | 'final' | 'assignment' | 'quiz'
+          })) : [];
+        
+        const typedLeaveData: LeaveRequest[] = leaveData ? 
+          leaveData.map(item => ({
+            ...item,
+            status: item.status as 'pending' | 'approved' | 'rejected'
+          })) : [];
+
         // Calculate attendance rate
-        const totalAttendanceRecords = attendanceData ? attendanceData.length : 0;
-        const presentRecords = attendanceData ? attendanceData.filter(a => a.status === 'present').length : 0;
+        const totalAttendanceRecords = typedAttendanceData.length;
+        const presentRecords = typedAttendanceData.filter(a => a.status === 'present').length;
         const attendanceRate = totalAttendanceRecords > 0 
           ? (presentRecords / totalAttendanceRecords) * 100 
           : 0;
         
         // Calculate average marks
-        const totalMarks = marksData ? marksData.reduce((sum, mark) => sum + mark.marks, 0) : 0;
-        const averageMarks = marksData && marksData.length > 0 
-          ? totalMarks / marksData.length 
+        const totalMarks = typedMarksData.reduce((sum, mark) => sum + mark.marks, 0);
+        const averageMarks = typedMarksData.length > 0 
+          ? totalMarks / typedMarksData.length 
           : 0;
 
         // Update state with fetched data
         setData({
           loading: false,
-          studentAttendance: attendanceData || [],
-          studentMarks: marksData || [],
-          studentLeaveRequests: leaveData || [],
+          studentAttendance: typedAttendanceData,
+          studentMarks: typedMarksData,
+          studentLeaveRequests: typedLeaveData,
           subjects: subjectsData || [],
           stats: {
             attendanceRate: parseFloat(attendanceRate.toFixed(1)),
