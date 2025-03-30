@@ -16,7 +16,6 @@ export async function fetchUserProfile(userId: string): Promise<User | null> {
     } 
 
     // Since email is not in the profiles table, we need to get it from the session
-    // or just leave it empty as it's not displayed in the UI
     const { data: { session } } = await supabase.auth.getSession();
     const email = session?.user?.email || '';
 
@@ -112,6 +111,11 @@ export async function saveAttendanceRecords(
       date,
       status
     }));
+    
+    if (records.length === 0) {
+      toast.error('No attendance records to save');
+      return false;
+    }
     
     // Insert the records into the database
     const { error } = await supabase

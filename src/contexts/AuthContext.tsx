@@ -23,7 +23,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (session) {
           const profileData = await fetchUserProfile(session.user.id);
-          setUser(profileData);
+          if (profileData) {
+            setUser(profileData);
+          } else {
+            setUser(null);
+          }
         } else {
           setUser(null);
         }

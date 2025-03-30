@@ -15,7 +15,7 @@ interface LeaveRequestCardProps {
 }
 
 export const LeaveRequestCard: React.FC<LeaveRequestCardProps> = ({ 
-  leaveRequests,
+  leaveRequests = [],
   onApprove,
   onReject,
   title = "Leave Requests" 
@@ -64,55 +64,54 @@ export const LeaveRequestCard: React.FC<LeaveRequestCardProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {sortedLeaveRequests.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              <p>No leave requests found</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {sortedLeaveRequests.map((leave) => (
-                <div key={leave.id} className="p-3 rounded-lg border">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-sm font-medium">
-                        {new Date(leave.date).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                    {getStatusBadge(leave.status)}
+        {sortedLeaveRequests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+            <CalendarClock className="h-16 w-16 mb-2 opacity-20" />
+            <p>No leave requests found</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sortedLeaveRequests.map((leave) => (
+              <div key={leave.id} className="p-3 rounded-lg border">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {new Date(leave.date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-2">{leave.reason}</p>
-                  
-                  {isTeacher() && leave.status === 'pending' && onApprove && onReject && (
-                    <div className="flex gap-2 mt-3">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="w-full text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:border-green-900 dark:hover:bg-green-900/40"
-                        onClick={() => onApprove(leave.id)}
-                      >
-                        <Check className="h-4 w-4 mr-1" /> Approve
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-900/40"
-                        onClick={() => onReject(leave.id)}
-                      >
-                        <X className="h-4 w-4 mr-1" /> Reject
-                      </Button>
-                    </div>
-                  )}
+                  {getStatusBadge(leave.status)}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <p className="text-sm text-muted-foreground mb-2">{leave.reason}</p>
+                
+                {isTeacher() && leave.status === 'pending' && onApprove && onReject && (
+                  <div className="flex gap-2 mt-3">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="w-full text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 dark:text-green-400 dark:border-green-900 dark:hover:bg-green-900/40"
+                      onClick={() => onApprove(leave.id)}
+                    >
+                      <Check className="h-4 w-4 mr-1" /> Approve
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:border-red-900 dark:hover:bg-red-900/40"
+                      onClick={() => onReject(leave.id)}
+                    >
+                      <X className="h-4 w-4 mr-1" /> Reject
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

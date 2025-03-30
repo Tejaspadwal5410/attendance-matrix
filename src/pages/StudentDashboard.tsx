@@ -48,6 +48,44 @@ const StudentDashboard = () => {
     const fetchStudentData = async () => {
       try {
         setLoading(true);
+        
+        // For demo users, use mock data
+        if (user.id.startsWith('1') && user.role === 'student') {
+          console.log("Loading demo data for student dashboard");
+          
+          // Use mock data
+          const mockAttendance = MOCK_DATA.attendance || [];
+          const mockMarks = MOCK_DATA.marks || [];
+          const mockLeaveRequests = MOCK_DATA.leaveRequests || [];
+          const mockSubjects = MOCK_DATA.subjects || [];
+          
+          // Calculate attendance rate from mock data
+          const totalAttendanceRecords = mockAttendance.length;
+          const presentRecords = mockAttendance.filter(a => a.status === 'present').length;
+          const attendanceRate = totalAttendanceRecords > 0 
+            ? (presentRecords / totalAttendanceRecords) * 100 
+            : 0;
+          
+          // Calculate average marks from mock data
+          const totalMarks = mockMarks.reduce((sum, mark) => sum + mark.marks, 0);
+          const averageMarks = mockMarks.length > 0 
+            ? totalMarks / mockMarks.length 
+            : 0;
+          
+          // Update state with mock data
+          setStudentAttendance(mockAttendance);
+          setStudentMarks(mockMarks);
+          setStudentLeaveRequests(mockLeaveRequests);
+          setSubjects(mockSubjects);
+          
+          setStats({
+            attendanceRate: parseFloat(attendanceRate.toFixed(1)),
+            averageMarks: parseFloat(averageMarks.toFixed(1))
+          });
+          
+          toast.success("Dashboard data loaded successfully");
+          return;
+        }
 
         // Fetch attendance data
         const { data: attendanceData, error: attendanceError } = await supabase
@@ -81,23 +119,23 @@ const StudentDashboard = () => {
         if (subjectsError) throw subjectsError;
 
         // Calculate attendance rate
-        const totalAttendanceRecords = attendanceData.length;
-        const presentRecords = attendanceData.filter(a => a.status === 'present').length;
+        const totalAttendanceRecords = attendanceData ? attendanceData.length : 0;
+        const presentRecords = attendanceData ? attendanceData.filter(a => a.status === 'present').length : 0;
         const attendanceRate = totalAttendanceRecords > 0 
           ? (presentRecords / totalAttendanceRecords) * 100 
           : 0;
         
         // Calculate average marks
-        const totalMarks = marksData.reduce((sum, mark) => sum + mark.marks, 0);
-        const averageMarks = marksData.length > 0 
+        const totalMarks = marksData ? marksData.reduce((sum, mark) => sum + mark.marks, 0) : 0;
+        const averageMarks = marksData && marksData.length > 0 
           ? totalMarks / marksData.length 
           : 0;
 
         // Update state with fetched data
-        setStudentAttendance(attendanceData);
-        setStudentMarks(marksData);
-        setStudentLeaveRequests(leaveData);
-        setSubjects(subjectsData);
+        setStudentAttendance(attendanceData || []);
+        setStudentMarks(marksData || []);
+        setStudentLeaveRequests(leaveData || []);
+        setSubjects(subjectsData || []);
         
         setStats({
           attendanceRate: parseFloat(attendanceRate.toFixed(1)),

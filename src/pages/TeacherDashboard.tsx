@@ -36,7 +36,7 @@ const TeacherDashboard = () => {
         setLoading(true);
 
         // If using a demo account, load mock data instead of fetching from Supabase
-        if (isDemoUser()) {
+        if (isDemoUser() || (user.id.startsWith('2') && user.role === 'teacher')) {
           console.log("Loading demo data for teacher dashboard");
           
           // Use mock data
@@ -94,7 +94,7 @@ const TeacherDashboard = () => {
         if (classesError) throw classesError;
 
         // Get class IDs for further queries
-        const classIds = classesData.map(c => c.id);
+        const classIds = classesData ? classesData.map(c => c.id) : [];
 
         // Fetch all students (for counting)
         const { data: studentsData, error: studentsError } = await supabase
@@ -105,12 +105,16 @@ const TeacherDashboard = () => {
         if (studentsError) throw studentsError;
 
         // Fetch attendance data for teacher's classes
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from('attendance')
-          .select('*')
-          .in('class_id', classIds);
+        let attendanceData = [];
+        if (classIds.length > 0) {
+          const { data, error: attendanceError } = await supabase
+            .from('attendance')
+            .select('*')
+            .in('class_id', classIds);
 
-        if (attendanceError) throw attendanceError;
+          if (attendanceError) throw attendanceError;
+          attendanceData = data || [];
+        }
 
         // Fetch subjects taught by this teacher
         const { data: subjectsData, error: subjectsError } = await supabase
@@ -121,15 +125,19 @@ const TeacherDashboard = () => {
         if (subjectsError) throw subjectsError;
 
         // Get subject IDs for marks query
-        const subjectIds = subjectsData.map(s => s.id);
+        const subjectIds = subjectsData ? subjectsData.map(s => s.id) : [];
 
         // Fetch marks for teacher's subjects
-        const { data: marksData, error: marksError } = await supabase
-          .from('marks')
-          .select('*')
-          .in('subject_id', subjectIds);
+        let marksData = [];
+        if (subjectIds.length > 0) {
+          const { data, error: marksError } = await supabase
+            .from('marks')
+            .select('*')
+            .in('subject_id', subjectIds);
 
-        if (marksError) throw marksError;
+          if (marksError) throw marksError;
+          marksData = data || [];
+        }
 
         // Fetch all leave requests (teachers can see all)
         const { data: leaveData, error: leaveError } = await supabase
@@ -153,17 +161,17 @@ const TeacherDashboard = () => {
           : 0;
         
         // Count pending leave requests
-        const pendingLeaves = leaveData.filter(lr => lr.status === 'pending').length;
+        const pendingLeaves = leaveData ? leaveData.filter(lr => lr.status === 'pending').length : 0;
 
         // Update state with fetched data
         setAttendance(attendanceData);
         setMarks(marksData);
-        setLeaveRequests(leaveData);
-        setSubjects(subjectsData);
+        setLeaveRequests(leaveData || []);
+        setSubjects(subjectsData || []);
         
         setStats({
-          totalStudents: studentsData.length,
-          totalClasses: classesData.length,
+          totalStudents: studentsData ? studentsData.length : 0,
+          totalClasses: classesData ? classesData.length : 0,
           attendanceRate: parseFloat(attendanceRate.toFixed(1)),
           averageMarks: parseFloat(averageMarks.toFixed(1)),
           pendingLeaves
@@ -191,7 +199,7 @@ const TeacherDashboard = () => {
   const handleApproveLeave = async (id) => {
     try {
       // For demo accounts, update the state directly without database call
-      if (isDemoUser()) {
+      if (isDemoUser() || (user && user.id.startsWith('2') && user.role === 'teacher')) {
         setLeaveRequests(leaveRequests.map(request => 
           request.id === id ? { ...request, status: 'approved' } : request
         ));
@@ -223,7 +231,7 @@ const TeacherDashboard = () => {
   const handleRejectLeave = async (id) => {
     try {
       // For demo accounts, update the state directly without database call
-      if (isDemoUser()) {
+      if (isDemoUser() || (user && user.id.startsWith('2') && user.role === 'teacher')) {
         setLeaveRequests(leaveRequests.map(request => 
           request.id === id ? { ...request, status: 'rejected' } : request
         ));
