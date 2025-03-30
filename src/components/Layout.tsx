@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Navbar } from './Navbar';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface LayoutProps {
   children: React.ReactNode;

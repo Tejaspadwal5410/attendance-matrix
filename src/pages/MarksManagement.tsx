@@ -1,9 +1,9 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { Layout } from '../components/Layout';
-import { MOCK_DATA, Mark } from '../utils/supabaseClient';
+import { useAuth } from '../hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   BookOpen, 
   Download, 
@@ -12,7 +12,6 @@ import {
   Search, 
   User 
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Select, 
@@ -21,15 +20,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 
 const MarksManagement = () => {
@@ -40,7 +31,6 @@ const MarksManagement = () => {
   const [marksData, setMarksData] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
 
-  // Redirect if not a teacher
   if (!user) {
     return <Navigate to="/" />;
   }
@@ -59,12 +49,10 @@ const MarksManagement = () => {
 
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
-    // In a real app, we would fetch marks data for this subject
   };
 
   const handleExamTypeChange = (value: Mark['exam_type']) => {
     setSelectedExamType(value);
-    // In a real app, we would fetch marks data for this exam type
   };
 
   const handleMarksChange = (studentId: string, marks: string) => {
@@ -81,8 +69,6 @@ const MarksManagement = () => {
   const handleSaveMarks = () => {
     setSaving(true);
     
-    // In a real app, this would save to Supabase
-    // Simulating API call
     setTimeout(() => {
       toast.success('Marks saved successfully');
       setSaving(false);
@@ -122,7 +108,6 @@ const MarksManagement = () => {
           </Button>
         </div>
 
-        {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="col-span-1">
             <CardHeader className="pb-3">
@@ -198,7 +183,6 @@ const MarksManagement = () => {
           </Card>
         </div>
 
-        {/* Marks Table */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">

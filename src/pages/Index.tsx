@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,7 +15,6 @@ export default function Index() {
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if user is already logged in
   useEffect(() => {
     if (user) {
       if (user.role === 'teacher') {
@@ -30,7 +28,6 @@ export default function Index() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!email.trim()) {
       toast.error('Email is required');
       return;
@@ -41,7 +38,6 @@ export default function Index() {
       return;
     }
     
-    // Prevent multiple submissions
     if (isSubmitting) return;
     
     try {
@@ -50,9 +46,8 @@ export default function Index() {
       
       if (error) {
         console.error('Login error:', error);
-        // Toast is already displayed in the AuthContext
+        toast.error('Failed to log in');
       }
-      // No need to navigate here, useEffect will handle that when the user state updates
     } catch (error: any) {
       console.error('Login attempt failed:', error);
       toast.error(error.message || 'An unexpected error occurred');

@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { CalendarClock, Check, Clock, X } from 'lucide-react';
 import { LeaveRequest } from '../utils/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface LeaveRequestCardProps {
   leaveRequests: LeaveRequest[];
