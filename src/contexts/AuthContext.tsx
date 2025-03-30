@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(demoUser);
           setIsDemoAccount(true);
           toast.success(`${demoUser.role} demo account logged in successfully`);
-          return { error: undefined };
+          return { error: null };
         }
       }
       
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         toast.success('Logged in successfully');
         setIsDemoAccount(false);
-        return { error: undefined };
+        return { error: null };
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data && data.user) {
         toast.success('Registration successful! Please check your email to verify your account.');
-        return { error: undefined };
+        return { error: null };
       } else {
         const customError = new Error('Registration failed - no user data returned');
         toast.error('Something went wrong during registration.');
@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setIsDemoAccount(false);
         toast.info('Logged out successfully');
-        return { error: undefined };
+        return { error: null };
       }
       
       // Regular Supabase signout for non-demo accounts
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
         toast.info('Logged out successfully');
-        return { error: undefined };
+        return { error: null };
       }
     } catch (error: any) {
       console.error('Logout error:', error);
