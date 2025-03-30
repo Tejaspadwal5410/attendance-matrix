@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { supabase, User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';
@@ -184,6 +185,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-// Remove this import to break the circular dependency
-// export { useAuth } from '../hooks/useAuth';
