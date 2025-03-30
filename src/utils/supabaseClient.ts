@@ -1,8 +1,4 @@
-
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-
-// Use the Supabase client from the integration
 export { supabase } from '@/integrations/supabase/client';
 
 // User types that match our database schema

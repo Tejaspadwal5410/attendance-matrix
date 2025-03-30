@@ -1,5 +1,6 @@
 
-import { supabase, User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
+import { User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';
 
 export async function fetchUserProfile(userId: string): Promise<User | null> {
