@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';
@@ -52,7 +51,6 @@ export function getRoleFromUser(user: User | null): {
   };
 }
 
-// New function to fetch students from the database
 export async function fetchStudents(): Promise<User[]> {
   try {
     const { data, error } = await supabase
@@ -79,7 +77,6 @@ export async function fetchStudents(): Promise<User[]> {
   }
 }
 
-// New function to fetch classes from the database
 export async function fetchClasses(): Promise<any[]> {
   try {
     const { data, error } = await supabase
@@ -98,7 +95,6 @@ export async function fetchClasses(): Promise<any[]> {
   }
 }
 
-// New function to save attendance records to the database
 export async function saveAttendanceRecords(
   attendanceData: Record<string, 'present' | 'absent'>, 
   date: string, 
@@ -141,7 +137,6 @@ export async function saveAttendanceRecords(
   }
 }
 
-// New function to fetch attendance records for a specific date and class
 export async function fetchAttendanceRecords(date: string, classId: string): Promise<any[]> {
   try {
     const { data, error } = await supabase
@@ -159,5 +154,31 @@ export async function fetchAttendanceRecords(date: string, classId: string): Pro
   } catch (error) {
     console.error('Error fetching attendance records:', error);
     return [];
+  }
+}
+
+export async function fetchStudentsCount(): Promise<number> {
+  try {
+    // If using a demo account, return mock data length
+    if (MOCK_DATA.users.filter(u => u.role === 'student').length > 0) {
+      return MOCK_DATA.users.filter(u => u.role === 'student').length;
+    }
+
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'student');
+    
+    if (error) {
+      console.error('Error fetching students count:', error);
+      toast.error('Failed to fetch student count');
+      return 0;
+    }
+    
+    return count || 0;
+  } catch (error) {
+    console.error('Error fetching students count:', error);
+    toast.error('An unexpected error occurred');
+    return 0;
   }
 }
