@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, FileUp, Check, AlertCircle } from 'lucide-react';
@@ -77,20 +76,62 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
         });
       }
       
-      // Use upsert to handle duplicate student records
+      // Process each record individually instead of using upsert with onConflict
       if (marksToInsert.length > 0) {
-        // Fix: Properly specify the on_conflict parameter with an array of columns
-        const { error } = await supabase
-          .from('marks')
-          .upsert(marksToInsert, { 
-            onConflict: 'student_id,subject_id,exam_type'
-          });
+        let successCount = 0;
+        let errorCount = 0;
         
-        if (error) throw error;
+        for (const mark of marksToInsert) {
+          // First check if the record exists
+          const { data: existingMarks, error: fetchError } = await supabase
+            .from('marks')
+            .select('id')
+            .eq('student_id', mark.student_id)
+            .eq('subject_id', mark.subject_id)
+            .eq('exam_type', mark.exam_type);
+            
+          if (fetchError) {
+            console.error('Error checking existing mark:', fetchError);
+            errorCount++;
+            continue;
+          }
+          
+          // Update or insert based on whether the record exists
+          if (existingMarks && existingMarks.length > 0) {
+            // Update existing record
+            const { error: updateError } = await supabase
+              .from('marks')
+              .update({ marks: mark.marks })
+              .eq('id', existingMarks[0].id);
+              
+            if (updateError) {
+              console.error('Error updating mark:', updateError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          } else {
+            // Insert new record
+            const { error: insertError } = await supabase
+              .from('marks')
+              .insert([mark]);
+              
+            if (insertError) {
+              console.error('Error inserting mark:', insertError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          }
+        }
         
-        toast.success(`Successfully processed ${marksToInsert.length} student records`);
-        setUploadSuccess(true);
-        onUploadSuccess();
+        if (errorCount > 0) {
+          toast.warning(`Processed ${successCount} records successfully with ${errorCount} errors`);
+        } else {
+          toast.success(`Successfully processed ${successCount} student records`);
+          setUploadSuccess(true);
+          onUploadSuccess();
+        }
       } else {
         toast.error('No valid data found in the CSV file');
       }
