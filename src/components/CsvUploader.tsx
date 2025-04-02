@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, FileUp, Check, AlertCircle } from 'lucide-react';
+import { Upload, FileUp, Check, AlertCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { validateStudentIds, fetchStudentsBySubject } from '@/utils/authUtils';
+import { Progress } from '@/components/ui/progress';
 
 interface CsvUploaderProps {
   subjectId: string;
@@ -19,16 +22,80 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
+  const [processedRows, setProcessedRows] = useState(0);
+  const [validationStatus, setValidationStatus] = useState<{
+    total: number;
+    valid: number;
+    invalid: number;
+  }>({ total: 0, valid: 0, invalid: 0 });
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
       setUploadSuccess(false);
+      setUploadProgress(0);
+      setProcessedRows(0);
+      setTotalRows(0);
+      setValidationStatus({ total: 0, valid: 0, invalid: 0 });
     } else {
       toast.error('Please select a valid CSV file');
       setFile(null);
     }
+  };
+  
+  const validateCsvData = async (rows: string[]): Promise<{
+    validRows: { student_id: string; marks: number }[];
+    invalidStudentIds: string[];
+    invalidMarks: { row: number; value: string }[];
+  }> => {
+    // Parse CSV rows
+    const isFirstRowHeader = rows[0].includes('student_id') || 
+                            rows[0].includes('Student ID') || 
+                            isNaN(parseInt(rows[0].split(',')[1]));
+    
+    const startRow = isFirstRowHeader ? 1 : 0;
+    
+    const parsedRows: { student_id: string; marks: number }[] = [];
+    const invalidMarks: { row: number; value: string }[] = [];
+    const studentIds: string[] = [];
+    
+    for (let i = startRow; i < rows.length; i++) {
+      const row = rows[i].trim();
+      if (!row) continue; // Skip empty rows
+      
+      const [studentId, marksStr] = row.split(',');
+      if (!studentId || !marksStr) continue;
+      
+      const marks = parseInt(marksStr.trim());
+      
+      if (isNaN(marks) || marks < 0 || marks > 100) {
+        invalidMarks.push({ row: i + 1, value: marksStr });
+        continue;
+      }
+      
+      // Add valid student ID to our array for later validation
+      studentIds.push(studentId.trim());
+      parsedRows.push({
+        student_id: studentId.trim(),
+        marks
+      });
+    }
+    
+    // Validate student IDs against database
+    const validStudentIds = await validateStudentIds(studentIds);
+    const invalidStudentIds = studentIds.filter(id => !validStudentIds.includes(id));
+    
+    // Filter rows to only include valid student IDs
+    const validRows = parsedRows.filter(row => validStudentIds.includes(row.student_id));
+    
+    return {
+      validRows,
+      invalidStudentIds,
+      invalidMarks
+    };
   };
   
   const handleUpload = async () => {
@@ -38,108 +105,112 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
     }
     
     setIsUploading(true);
+    setUploadProgress(5); // Start progress
     
     try {
       // Read the CSV file
       const text = await file.text();
       const rows = text.split('\n');
       
-      // Parse CSV (assuming format: student_id,marks)
-      // Skip header row if it exists (first row)
-      const isFirstRowHeader = rows[0].includes('student_id') || 
-                              rows[0].includes('Student ID') || 
-                              isNaN(parseInt(rows[0].split(',')[1]));
+      // Validate CSV data
+      const { validRows, invalidStudentIds, invalidMarks } = await validateCsvData(rows);
       
-      const startRow = isFirstRowHeader ? 1 : 0;
+      setValidationStatus({
+        total: rows.length,
+        valid: validRows.length,
+        invalid: invalidStudentIds.length + invalidMarks.length
+      });
       
-      // Create batch of marks to insert
-      const marksToInsert = [];
+      setTotalRows(validRows.length);
       
-      for (let i = startRow; i < rows.length; i++) {
-        const row = rows[i].trim();
-        if (!row) continue; // Skip empty rows
+      if (validRows.length === 0) {
+        toast.error('No valid data found in the CSV file');
+        setIsUploading(false);
+        return;
+      }
+      
+      if (invalidStudentIds.length > 0) {
+        toast.warning(`${invalidStudentIds.length} invalid student IDs found in the CSV`);
+      }
+      
+      if (invalidMarks.length > 0) {
+        toast.warning(`${invalidMarks.length} invalid marks values found in the CSV`);
+      }
+      
+      // Process each valid record individually
+      let successCount = 0;
+      let errorCount = 0;
+      
+      setUploadProgress(20); // After validation
+      
+      for (let i = 0; i < validRows.length; i++) {
+        const row = validRows[i];
         
-        const [studentId, marksStr] = row.split(',');
-        if (!studentId || !marksStr) continue;
-        
-        const marks = parseInt(marksStr.trim());
-        if (isNaN(marks) || marks < 0 || marks > 100) {
-          toast.error(`Invalid marks value in row ${i + 1}: ${marksStr}`);
+        // Check if the record exists
+        const { data: existingMarks, error: fetchError } = await supabase
+          .from('marks')
+          .select('id')
+          .eq('student_id', row.student_id)
+          .eq('subject_id', subjectId)
+          .eq('exam_type', examType);
+          
+        if (fetchError) {
+          console.error('Error checking existing mark:', fetchError);
+          errorCount++;
           continue;
         }
         
-        marksToInsert.push({
-          student_id: studentId.trim(),
-          subject_id: subjectId,
-          exam_type: examType,
-          marks: marks
-        });
+        // Update or insert based on whether the record exists
+        if (existingMarks && existingMarks.length > 0) {
+          // Update existing record
+          const { error: updateError } = await supabase
+            .from('marks')
+            .update({ marks: row.marks })
+            .eq('id', existingMarks[0].id);
+            
+          if (updateError) {
+            console.error('Error updating mark:', updateError);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } else {
+          // Insert new record
+          const { error: insertError } = await supabase
+            .from('marks')
+            .insert([{
+              student_id: row.student_id,
+              subject_id: subjectId,
+              exam_type: examType,
+              marks: row.marks
+            }]);
+            
+          if (insertError) {
+            console.error('Error inserting mark:', insertError);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        }
+        
+        // Update progress
+        setProcessedRows(i + 1);
+        setUploadProgress(20 + Math.floor((i + 1) / validRows.length * 80));
       }
       
-      // Process each record individually instead of using upsert with onConflict
-      if (marksToInsert.length > 0) {
-        let successCount = 0;
-        let errorCount = 0;
-        
-        for (const mark of marksToInsert) {
-          // First check if the record exists
-          const { data: existingMarks, error: fetchError } = await supabase
-            .from('marks')
-            .select('id')
-            .eq('student_id', mark.student_id)
-            .eq('subject_id', mark.subject_id)
-            .eq('exam_type', mark.exam_type);
-            
-          if (fetchError) {
-            console.error('Error checking existing mark:', fetchError);
-            errorCount++;
-            continue;
-          }
-          
-          // Update or insert based on whether the record exists
-          if (existingMarks && existingMarks.length > 0) {
-            // Update existing record
-            const { error: updateError } = await supabase
-              .from('marks')
-              .update({ marks: mark.marks })
-              .eq('id', existingMarks[0].id);
-              
-            if (updateError) {
-              console.error('Error updating mark:', updateError);
-              errorCount++;
-            } else {
-              successCount++;
-            }
-          } else {
-            // Insert new record
-            const { error: insertError } = await supabase
-              .from('marks')
-              .insert([mark]);
-              
-            if (insertError) {
-              console.error('Error inserting mark:', insertError);
-              errorCount++;
-            } else {
-              successCount++;
-            }
-          }
-        }
-        
-        if (errorCount > 0) {
-          toast.warning(`Processed ${successCount} records successfully with ${errorCount} errors`);
-        } else {
-          toast.success(`Successfully processed ${successCount} student records`);
-          setUploadSuccess(true);
-          onUploadSuccess();
-        }
+      if (errorCount > 0) {
+        toast.warning(`Processed ${successCount} records successfully with ${errorCount} errors`);
       } else {
-        toast.error('No valid data found in the CSV file');
+        toast.success(`Successfully processed ${successCount} student records`);
+        setUploadSuccess(true);
+        onUploadSuccess();
       }
     } catch (error) {
       console.error('Error uploading marks:', error);
       toast.error('Failed to upload marks. Please check your CSV format and try again.');
     } finally {
       setIsUploading(false);
+      setUploadProgress(100);
     }
   };
   
@@ -189,6 +260,39 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
               />
             </label>
           </div>
+          
+          {isUploading && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Uploading...</span>
+                <span>{Math.min(uploadProgress, 100)}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-1" />
+              {totalRows > 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Processing {processedRows} of {totalRows} records
+                </p>
+              )}
+            </div>
+          )}
+          
+          {validationStatus.total > 0 && !isUploading && (
+            <div className="flex items-start p-3 rounded-md bg-secondary">
+              <Info className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
+              <div className="text-xs">
+                <p className="font-medium">CSV Validation Results:</p>
+                <ul className="mt-1 space-y-1">
+                  <li>Total rows: {validationStatus.total}</li>
+                  <li>Valid records: {validationStatus.valid}</li>
+                  {validationStatus.invalid > 0 && (
+                    <li className="text-amber-600 dark:text-amber-400">
+                      Invalid records: {validationStatus.invalid}
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          )}
           
           <div className="flex items-center">
             <AlertCircle className="h-4 w-4 mr-2 text-muted-foreground" />

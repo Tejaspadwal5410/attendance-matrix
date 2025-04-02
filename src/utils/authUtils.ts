@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';
@@ -180,5 +181,69 @@ export async function fetchStudentsCount(): Promise<number> {
     console.error('Error fetching students count:', error);
     toast.error('An unexpected error occurred');
     return 0;
+  }
+}
+
+export async function fetchStudentsBySubject(subjectId: string): Promise<User[]> {
+  try {
+    // If using mock data
+    if (MOCK_DATA.users.filter(u => u.role === 'student').length > 0) {
+      // For mock data, just return all students
+      return MOCK_DATA.users.filter(u => u.role === 'student');
+    }
+
+    // For real data, we need to query students related to the subject
+    // This could be through class enrollment or another relationship
+    // For now, we'll fetch all students as a fallback
+    const { data: students, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'student');
+    
+    if (error) {
+      console.error('Error fetching students by subject:', error);
+      return [];
+    }
+    
+    return students.map(student => ({
+      id: student.id,
+      email: '',
+      name: student.name,
+      role: student.role as UserRole,
+      avatar_url: student.avatar_url
+    }));
+  } catch (error) {
+    console.error('Error fetching students by subject:', error);
+    return [];
+  }
+}
+
+export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
+  try {
+    // For mock data
+    if (MOCK_DATA.users.filter(u => u.role === 'student').length > 0) {
+      const mockStudentIds = MOCK_DATA.users
+        .filter(u => u.role === 'student')
+        .map(s => s.id);
+      
+      return studentIds.filter(id => mockStudentIds.includes(id));
+    }
+
+    // For real database, validate student IDs exist in profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'student')
+      .in('id', studentIds);
+    
+    if (error) {
+      console.error('Error validating student IDs:', error);
+      return [];
+    }
+    
+    return data.map(s => s.id);
+  } catch (error) {
+    console.error('Error validating student IDs:', error);
+    return [];
   }
 }

@@ -27,6 +27,8 @@ import { toast } from 'sonner';
 import { MOCK_DATA } from '@/utils/supabaseClient';
 import { CsvUploader } from '@/components/CsvUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetchStudents, fetchStudentsBySubject } from '@/utils/authUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 type Mark = {
   id: string;
@@ -45,6 +47,71 @@ const MarksManagement = () => {
   const [marksData, setMarksData] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("manual");
+  const [students, setStudents] = useState(MOCK_DATA.users.filter(u => u.role === 'student'));
+  const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    // Load students data
+    loadStudents();
+    // Load existing marks if any
+    if (selectedSubject && selectedExamType) {
+      loadExistingMarks();
+    }
+  }, [selectedSubject, selectedExamType]);
+  
+  const loadStudents = async () => {
+    setLoading(true);
+    try {
+      // Get students for this subject
+      const subjectStudents = await fetchStudentsBySubject(selectedSubject);
+      setStudents(subjectStudents);
+    } catch (error) {
+      console.error('Error loading students:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const loadExistingMarks = async () => {
+    try {
+      // Check if we're using mock data
+      if (MOCK_DATA.marks.length > 0) {
+        const mockMarks = MOCK_DATA.marks.filter(
+          m => m.subject_id === selectedSubject && m.exam_type === selectedExamType
+        );
+        
+        const marksMap: Record<string, number> = {};
+        mockMarks.forEach(mark => {
+          marksMap[mark.student_id] = mark.marks;
+        });
+        
+        setMarksData(marksMap);
+        return;
+      }
+      
+      // Fetch from the database
+      const { data, error } = await supabase
+        .from('marks')
+        .select('*')
+        .eq('subject_id', selectedSubject)
+        .eq('exam_type', selectedExamType);
+        
+      if (error) {
+        console.error('Error fetching marks:', error);
+        return;
+      }
+      
+      // Create a map of student ID to marks
+      const marksMap: Record<string, number> = {};
+      data.forEach(mark => {
+        marksMap[mark.student_id] = mark.marks;
+      });
+      
+      setMarksData(marksMap);
+    } catch (error) {
+      console.error('Error loading existing marks:', error);
+    }
+  };
 
   if (!user) {
     return <Navigate to="/" />;
@@ -54,7 +121,6 @@ const MarksManagement = () => {
     return <Navigate to="/student" />;
   }
 
-  const students = MOCK_DATA.users.filter(u => u.role === 'student');
   const subjects = MOCK_DATA.subjects;
   const examTypes: Mark['exam_type'][] = ['midterm', 'final', 'assignment', 'quiz'];
 
@@ -81,21 +147,115 @@ const MarksManagement = () => {
     }
   };
 
-  const handleSaveMarks = () => {
+  const handleSaveMarks = async () => {
+    if (Object.keys(marksData).length === 0) {
+      toast.error('No marks to save');
+      return;
+    }
+    
     setSaving(true);
     
-    setTimeout(() => {
-      toast.success('Marks saved successfully');
+    try {
+      // For mock data
+      if (MOCK_DATA.marks.length > 0) {
+        setTimeout(() => {
+          toast.success('Marks saved successfully');
+          setSaving(false);
+        }, 1000);
+        return;
+      }
+      
+      // Prepare records for insertion/update
+      const records = Object.entries(marksData).map(([studentId, marks]) => ({
+        student_id: studentId,
+        subject_id: selectedSubject,
+        exam_type: selectedExamType,
+        marks
+      }));
+      
+      // Process each record individually
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const record of records) {
+        // Check if a record exists
+        const { data: existingMarks, error: fetchError } = await supabase
+          .from('marks')
+          .select('id')
+          .eq('student_id', record.student_id)
+          .eq('subject_id', record.subject_id)
+          .eq('exam_type', record.exam_type);
+          
+        if (fetchError) {
+          console.error('Error checking existing mark:', fetchError);
+          errorCount++;
+          continue;
+        }
+        
+        if (existingMarks && existingMarks.length > 0) {
+          // Update existing record
+          const { error: updateError } = await supabase
+            .from('marks')
+            .update({ marks: record.marks })
+            .eq('id', existingMarks[0].id);
+            
+          if (updateError) {
+            console.error('Error updating mark:', updateError);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } else {
+          // Insert new record
+          const { error: insertError } = await supabase
+            .from('marks')
+            .insert([record]);
+            
+          if (insertError) {
+            console.error('Error inserting mark:', insertError);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        }
+      }
+      
+      if (errorCount > 0) {
+        toast.warning(`Saved ${successCount} records with ${errorCount} errors`);
+      } else {
+        toast.success(`Successfully saved ${successCount} student marks`);
+      }
+    } catch (error) {
+      console.error('Error saving marks:', error);
+      toast.error('An unexpected error occurred while saving marks');
+    } finally {
       setSaving(false);
-    }, 1000);
+    }
   };
 
   const handleDownloadReport = () => {
+    // Create CSV content
+    let csvContent = "Student ID,Student Name,Marks\n";
+    
+    filteredStudents.forEach(student => {
+      const marks = marksData[student.id] !== undefined ? marksData[student.id] : '';
+      csvContent += `${student.id},${student.name},${marks}\n`;
+    });
+    
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `${selectedExamType}_marks_${new Date().toISOString().split('T')[0]}.csv`);
+    a.click();
+    
     toast.success('Marks report downloaded');
   };
 
   const handleUploadSuccess = () => {
-    // Refresh marks data if needed
+    // Refresh marks data
+    loadExistingMarks();
     toast.success('Marks uploaded successfully');
   };
 
@@ -239,47 +399,55 @@ const MarksManagement = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredStudents.map((student, index) => (
-                        <TableRow key={student.id}>
-                          <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                                {student.name.substring(0, 1).toUpperCase()}
-                              </div>
-                              <span>{student.name}</span>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center h-24">
+                            <div className="flex justify-center items-center h-full">
+                              <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <Input 
-                              type="number" 
-                              min="0" 
-                              max="100"
-                              placeholder="0-100"
-                              value={marksData[student.id] !== undefined ? marksData[student.id] : ''}
-                              onChange={(e) => handleMarksChange(student.id, e.target.value)}
-                              className="text-center"
-                            />
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {marksData[student.id] !== undefined && (
-                              <div 
-                                className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                                  marksData[student.id] >= 80 
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
-                                    : marksData[student.id] >= 60 
-                                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' 
-                                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                                }`}
-                              >
-                                {getGradeLabel(marksData[student.id])}
-                              </div>
-                            )}
-                          </TableCell>
                         </TableRow>
-                      ))}
-                      
-                      {filteredStudents.length === 0 && (
+                      ) : filteredStudents.length > 0 ? (
+                        filteredStudents.map((student, index) => (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-medium">{index + 1}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                                  {student.name.substring(0, 1).toUpperCase()}
+                                </div>
+                                <span>{student.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                max="100"
+                                placeholder="0-100"
+                                value={marksData[student.id] !== undefined ? marksData[student.id] : ''}
+                                onChange={(e) => handleMarksChange(student.id, e.target.value)}
+                                className="text-center"
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {marksData[student.id] !== undefined && (
+                                <div 
+                                  className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                    marksData[student.id] >= 80 
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
+                                      : marksData[student.id] >= 60 
+                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' 
+                                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                                  }`}
+                                >
+                                  {getGradeLabel(marksData[student.id])}
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
                             No students found
