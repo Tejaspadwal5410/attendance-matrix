@@ -79,11 +79,11 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
       
       // Use upsert to handle duplicate student records
       if (marksToInsert.length > 0) {
+        // Fix: Properly specify the on_conflict parameter with an array of columns
         const { error } = await supabase
           .from('marks')
           .upsert(marksToInsert, { 
-            onConflict: 'student_id,subject_id,exam_type',
-            ignoreDuplicates: false
+            onConflict: 'student_id,subject_id,exam_type'
           });
         
         if (error) throw error;
@@ -96,7 +96,7 @@ export const CsvUploader: React.FC<CsvUploaderProps> = ({
       }
     } catch (error) {
       console.error('Error uploading marks:', error);
-      toast.error('Failed to upload marks');
+      toast.error('Failed to upload marks. Please check your CSV format and try again.');
     } finally {
       setIsUploading(false);
     }
