@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, MOCK_DATA, Attendance, Mark, LeaveRequest, Subject, Class } from '@/utils/supabaseClient';
+import { User, MOCK_DATA, Attendance, Mark, Subject, Class } from '@/utils/supabaseClient';
 import { toast } from 'sonner';
 
 export interface TeacherDashboardData {
@@ -11,11 +11,9 @@ export interface TeacherDashboardData {
     totalClasses: number;
     attendanceRate: number;
     averageMarks: number;
-    pendingLeaves: number;
   };
   attendance: Attendance[];
   marks: Mark[];
-  leaveRequests: LeaveRequest[];
   subjects: Subject[];
   classes: Class[];
 }
@@ -27,12 +25,10 @@ export const useTeacherDashboardData = (userId: string | undefined) => {
       totalStudents: 0,
       totalClasses: 0,
       attendanceRate: 0,
-      averageMarks: 0,
-      pendingLeaves: 0
+      averageMarks: 0
     },
     attendance: [],
     marks: [],
-    leaveRequests: [],
     subjects: [],
     classes: []
   });
@@ -51,7 +47,6 @@ export const useTeacherDashboardData = (userId: string | undefined) => {
           // Use mock data
           const mockAttendance = MOCK_DATA.attendance || [];
           const mockMarks = MOCK_DATA.marks || [];
-          const mockLeaveRequests = MOCK_DATA.leaveRequests || [];
           const mockSubjects = MOCK_DATA.subjects || [];
           const mockStudents = MOCK_DATA.users.filter(u => u.role === 'student') || [];
           const mockClasses = MOCK_DATA.classes || [];
@@ -68,8 +63,6 @@ export const useTeacherDashboardData = (userId: string | undefined) => {
             ? totalMarks / mockMarks.length 
             : 0;
           
-          const pendingLeaves = mockLeaveRequests.filter(lr => lr.status === 'pending').length;
-          
           // Update state with mock data
           setData({
             loading: false,
@@ -77,12 +70,10 @@ export const useTeacherDashboardData = (userId: string | undefined) => {
               totalStudents: mockStudents.length,
               totalClasses: mockClasses.length,
               attendanceRate: parseFloat(attendanceRate.toFixed(1)),
-              averageMarks: parseFloat(averageMarks.toFixed(1)),
-              pendingLeaves
+              averageMarks: parseFloat(averageMarks.toFixed(1))
             },
             attendance: mockAttendance,
             marks: mockMarks,
-            leaveRequests: mockLeaveRequests,
             subjects: mockSubjects,
             classes: mockClasses
           });
@@ -157,20 +148,6 @@ export const useTeacherDashboardData = (userId: string | undefined) => {
           })) : [];
         }
 
-        // Fetch all leave requests (teachers can see all)
-        let leaveData: LeaveRequest[] = [];
-        const { data: leaveResponseData, error: leaveError } = await supabase
-          .from('leave_requests')
-          .select('*');
-
-        if (leaveError) throw leaveError;
-        
-        // Cast the status to the expected type
-        leaveData = leaveResponseData ? leaveResponseData.map(item => ({
-          ...item,
-          status: item.status as 'pending' | 'approved' | 'rejected'
-        })) : [];
-
         // Calculate stats
         // Attendance rate
         const totalAttendanceRecords = attendanceData.length;
@@ -184,9 +161,6 @@ export const useTeacherDashboardData = (userId: string | undefined) => {
         const averageMarks = marksData.length > 0 
           ? totalMarks / marksData.length 
           : 0;
-        
-        // Count pending leave requests
-        const pendingLeaves = leaveData ? leaveData.filter(lr => lr.status === 'pending').length : 0;
 
         // Update state with fetched data
         setData({
@@ -195,12 +169,10 @@ export const useTeacherDashboardData = (userId: string | undefined) => {
             totalStudents: studentsData ? studentsData.length : 0,
             totalClasses: classesData ? classesData.length : 0,
             attendanceRate: parseFloat(attendanceRate.toFixed(1)),
-            averageMarks: parseFloat(averageMarks.toFixed(1)),
-            pendingLeaves
+            averageMarks: parseFloat(averageMarks.toFixed(1))
           },
           attendance: attendanceData,
           marks: marksData,
-          leaveRequests: leaveData,
           subjects: subjectsData || [],
           classes: classesData || []
         });

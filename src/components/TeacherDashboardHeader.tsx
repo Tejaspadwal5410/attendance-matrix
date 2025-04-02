@@ -10,7 +10,6 @@ interface TeacherDashboardHeaderProps {
     totalClasses: number;
     attendanceRate: number;
     averageMarks: number;
-    pendingLeaves: number;
   };
 }
 
@@ -36,7 +35,7 @@ export const TeacherDashboardHeader: React.FC<TeacherDashboardHeaderProps> = ({
         totalClasses={stats.totalClasses}
         attendanceRate={stats.attendanceRate}
         averageMarks={stats.averageMarks}
-        pendingLeaves={stats.pendingLeaves}
+        pendingLeaves={0}
       />
     </>
   );

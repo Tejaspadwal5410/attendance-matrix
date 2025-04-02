@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -10,7 +11,8 @@ import {
   PenLine, 
   Save, 
   Search, 
-  User 
+  User,
+  Upload
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { 
@@ -23,6 +25,8 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { MOCK_DATA } from '@/utils/supabaseClient';
+import { CsvUploader } from '@/components/CsvUploader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Mark = {
   id: string;
@@ -40,6 +44,7 @@ const MarksManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [marksData, setMarksData] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("manual");
 
   if (!user) {
     return <Navigate to="/" />;
@@ -87,6 +92,11 @@ const MarksManagement = () => {
 
   const handleDownloadReport = () => {
     toast.success('Marks report downloaded');
+  };
+
+  const handleUploadSuccess = () => {
+    // Refresh marks data if needed
+    toast.success('Marks uploaded successfully');
   };
 
   const getGradeLabel = (marks: number) => {
@@ -193,101 +203,185 @@ const MarksManagement = () => {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>
-                {selectedExamType.charAt(0).toUpperCase() + selectedExamType.slice(1)} Marks
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Subject: {subjects.find(s => s.id === selectedSubject)?.name || 'None selected'}
-              </p>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full md:w-96 grid-cols-2">
+            <TabsTrigger value="manual" className="flex items-center">
+              <PenLine className="h-4 w-4 mr-2" />
+              Manual Entry
+            </TabsTrigger>
+            <TabsTrigger value="csv" className="flex items-center">
+              <Upload className="h-4 w-4 mr-2" />
+              CSV Upload
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="manual" className="mt-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>
+                    {selectedExamType.charAt(0).toUpperCase() + selectedExamType.slice(1)} Marks
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Subject: {subjects.find(s => s.id === selectedSubject)?.name || 'None selected'}
+                  </p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">#</TableHead>
+                        <TableHead>Student Name</TableHead>
+                        <TableHead className="w-32 text-center">Marks (0-100)</TableHead>
+                        <TableHead className="w-24 text-center">Grade</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((student, index) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                                {student.name.substring(0, 1).toUpperCase()}
+                              </div>
+                              <span>{student.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max="100"
+                              placeholder="0-100"
+                              value={marksData[student.id] !== undefined ? marksData[student.id] : ''}
+                              onChange={(e) => handleMarksChange(student.id, e.target.value)}
+                              className="text-center"
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {marksData[student.id] !== undefined && (
+                              <div 
+                                className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                  marksData[student.id] >= 80 
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
+                                    : marksData[student.id] >= 60 
+                                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' 
+                                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                                }`}
+                              >
+                                {getGradeLabel(marksData[student.id])}
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      
+                      {filteredStudents.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                            No students found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <Button 
+                    onClick={handleSaveMarks} 
+                    disabled={saving || Object.keys(marksData).length === 0}
+                    className="flex items-center gap-2"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        <span>Save Marks</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="csv" className="mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <CsvUploader 
+                  subjectId={selectedSubject} 
+                  examType={selectedExamType}
+                  onUploadSuccess={handleUploadSuccess}
+                />
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">CSV Format Guide</CardTitle>
+                  <CardDescription>
+                    How to prepare your CSV file for upload
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">CSV Structure</h4>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Your CSV file should have the following format:
+                      </p>
+                      <div className="bg-secondary p-3 rounded-md text-xs font-mono">
+                        student_id,marks<br/>
+                        student1_id,85<br/>
+                        student2_id,92<br/>
+                        student3_id,78
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium mb-2">Important Notes</h4>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                        <li>First row containing headers is optional</li>
+                        <li>Student IDs must match existing students</li>
+                        <li>Marks must be numbers between 0 and 100</li>
+                        <li>Duplicate student IDs will update existing marks</li>
+                      </ul>
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full text-xs" 
+                      onClick={() => {
+                        // Generate sample CSV
+                        const csvHeader = "student_id,marks\n";
+                        const csvData = students.slice(0, 3).map(s => `${s.id},85`).join("\n");
+                        const csvContent = csvHeader + csvData;
+                        
+                        // Create blob and download
+                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.setAttribute('href', url);
+                        a.setAttribute('download', 'sample_marks.csv');
+                        a.click();
+                      }}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1" />
+                      Download Sample CSV
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead className="w-32 text-center">Marks (0-100)</TableHead>
-                    <TableHead className="w-24 text-center">Grade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((student, index) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                            {student.name.substring(0, 1).toUpperCase()}
-                          </div>
-                          <span>{student.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          max="100"
-                          placeholder="0-100"
-                          value={marksData[student.id] !== undefined ? marksData[student.id] : ''}
-                          onChange={(e) => handleMarksChange(student.id, e.target.value)}
-                          className="text-center"
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {marksData[student.id] !== undefined && (
-                          <div 
-                            className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                              marksData[student.id] >= 80 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
-                                : marksData[student.id] >= 60 
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' 
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                            }`}
-                          >
-                            {getGradeLabel(marksData[student.id])}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  
-                  {filteredStudents.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                        No students found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            
-            <div className="mt-4 flex justify-end">
-              <Button 
-                onClick={handleSaveMarks} 
-                disabled={saving || Object.keys(marksData).length === 0}
-                className="flex items-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    <span>Save Marks</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
