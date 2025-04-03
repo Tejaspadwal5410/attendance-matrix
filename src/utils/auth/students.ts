@@ -25,6 +25,7 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
   }
 }
 
+// Define this type locally instead of relying on imported types to avoid circular references
 type ProfileResponse = {
   id: string;
   name: string;
