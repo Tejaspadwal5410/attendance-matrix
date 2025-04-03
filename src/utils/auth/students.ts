@@ -1,6 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, MOCK_DATA, UserRole } from '../supabaseClient';
+import { MOCK_DATA, UserRole } from '../supabaseClient';
+
+// Define the User type locally to break circular references
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar_url: string;
+  class?: string | null;
+  batch?: string | null;
+  board?: string | null;
+}
 
 export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
   try {
@@ -59,8 +71,8 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
       return [];
     }
     
-    // Break the type recursion with a more explicit type assertion
-    const students: User[] = (data || []).map((profile: any) => {
+    // Map the response to User objects with explicit typing
+    const students: User[] = (data || []).map((profile: ProfileResponse) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
@@ -108,8 +120,8 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       return [];
     }
     
-    // Break the type recursion with a more explicit type assertion
-    const students: User[] = (studentsData || []).map((profile: any) => {
+    // Map the response to User objects with explicit typing
+    const students: User[] = (studentsData || []).map((profile: ProfileResponse) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table

@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, UserRole, MOCK_DATA } from '../supabaseClient';
 
+// Define ProfileResponse type locally to avoid circular references
 type ProfileResponse = {
   id: string;
   name: string;

@@ -1,7 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Attendance, MOCK_DATA } from '../supabaseClient';
+import { MOCK_DATA } from '../supabaseClient';
 import { toast } from 'sonner';
+
+// Define Attendance type locally to break circular references
+export interface Attendance {
+  id: string;
+  student_id: string;
+  class_id: string;
+  date: string;
+  status: 'present' | 'absent';
+  batch?: string | null;
+}
 
 export async function fetchAttendanceRecords(
   date: string,
@@ -27,8 +37,8 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Break the type recursion with a more explicit type assertion
-    return (data || []) as any[] as Attendance[];
+    // Use explicit type casting to break the circular reference
+    return (data || []) as Attendance[];
   } catch (error) {
     console.error('Error in fetchAttendanceRecords:', error);
     return [];
