@@ -1,3 +1,3 @@
 
-// Re-export all auth-related functions from the auth module
+// Export all the auth utilities
 export * from './auth';

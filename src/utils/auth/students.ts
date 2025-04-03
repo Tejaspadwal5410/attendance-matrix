@@ -58,8 +58,8 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
       return [];
     }
     
-    // Transform data to match User type
-    const students: User[] = ((data || []) as ProfileResponse[]).map(profile => {
+    // Transform data to match User type with type assertion to avoid recursion
+    const students: User[] = ((data || []) as unknown as ProfileResponse[]).map(profile => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
@@ -107,13 +107,13 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       return [];
     }
     
-    // Transform data to match User type
-    const students: User[] = (studentsData as ProfileResponse[]).map(profile => {
+    // Transform data to match User type with type assertion to avoid recursion
+    const students: User[] = (studentsData as unknown as ProfileResponse[]).map(profile => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
         name: profile.name,
-        role: 'student',
+        role: 'student' as UserRole,
         avatar_url: profile.avatar_url || '',
         class: profile.class || null,
         batch: profile.batch || null,

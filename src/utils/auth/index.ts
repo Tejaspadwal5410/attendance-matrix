@@ -1,6 +1,5 @@
 
-// Re-export all auth-related utilities for easier imports
-export * from './userProfile';
-export * from './students';
-export * from './classes';
 export * from './attendance';
+export * from './classes';
+export * from './students';
+export * from './userProfile';
