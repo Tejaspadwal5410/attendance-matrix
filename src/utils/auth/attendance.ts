@@ -27,7 +27,7 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    return data as Attendance[];
+    return (data || []) as Attendance[];
   } catch (error) {
     console.error('Error in fetchAttendanceRecords:', error);
     return [];

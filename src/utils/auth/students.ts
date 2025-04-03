@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, MOCK_DATA } from '../supabaseClient';
+import { User, MOCK_DATA, UserRole } from '../supabaseClient';
 
 export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
   try {
@@ -59,12 +59,12 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Transform data to match User type
-    const students: User[] = (data as ProfileResponse[]).map(profile => {
+    const students: User[] = ((data || []) as ProfileResponse[]).map(profile => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
         name: profile.name,
-        role: 'student',
+        role: profile.role as UserRole,
         avatar_url: profile.avatar_url || '',
         class: profile.class || null,
         batch: profile.batch || null,

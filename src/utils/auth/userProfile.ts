@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, MOCK_DATA } from '../supabaseClient';
+import { User, UserRole, MOCK_DATA } from '../supabaseClient';
 
 type ProfileResponse = {
   id: string;
@@ -31,7 +31,7 @@ export async function fetchUserProfile(userId: string): Promise<User | null> {
       id: profile.id,
       email: '', // Email is not stored in profiles table
       name: profile.name,
-      role: profile.role,
+      role: profile.role as UserRole,
       avatar_url: profile.avatar_url || '',
       class: profile.class || null,
       batch: profile.batch || null,
