@@ -2,6 +2,29 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, MOCK_DATA } from '../supabaseClient';
 
+export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
+  try {
+    if (studentIds.length === 0) return [];
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'student')
+      .in('id', studentIds);
+    
+    if (error) {
+      console.error('Error validating student IDs:', error);
+      return [];
+    }
+    
+    // Return array of valid student IDs
+    return data.map(profile => profile.id);
+  } catch (error) {
+    console.error('Error in validateStudentIds:', error);
+    return [];
+  }
+}
+
 export async function fetchStudents(classId?: string, batch?: string): Promise<User[]> {
   try {
     let query = supabase
@@ -108,4 +131,25 @@ export function getMockStudentsBySubject(subjectId: string): User[] {
   return MOCK_DATA.users.filter(u => 
     u.role === 'student' && u.class === subject.class_id
   );
+}
+
+// Add function to add a new student
+export async function addNewStudent(student: {
+  registerNumber: string;
+  name: string;
+  class: string;
+  batch: string;
+  board: string;
+}): Promise<boolean> {
+  try {
+    // In a real app, we would create a user in auth and then add to profiles
+    // For demo purposes, we'll just show a success
+    console.log('Would add student:', student);
+    
+    // For demo mode, return true to simulate success
+    return true;
+  } catch (error) {
+    console.error('Error adding student:', error);
+    return false;
+  }
 }
