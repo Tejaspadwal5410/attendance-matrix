@@ -31,7 +31,7 @@ export async function fetchUserProfile(userId: string): Promise<User | null> {
       id: profile.id,
       email: '', // Email is not stored in profiles table
       name: profile.name,
-      role: profile.role as UserRole,
+      role: profile.role as UserRole, // Use type assertion to match UserRole enum
       avatar_url: profile.avatar_url || '',
       class: profile.class || null,
       batch: profile.batch || null,

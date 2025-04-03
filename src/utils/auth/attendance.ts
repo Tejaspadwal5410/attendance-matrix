@@ -27,8 +27,8 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Use type assertion to avoid excessive type recursion
-    return (data || []) as unknown as Attendance[];
+    // Break the type recursion with a more explicit type assertion
+    return (data || []) as any[] as Attendance[];
   } catch (error) {
     console.error('Error in fetchAttendanceRecords:', error);
     return [];
