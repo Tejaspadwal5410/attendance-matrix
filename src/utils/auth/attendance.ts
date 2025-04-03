@@ -46,7 +46,7 @@ export async function saveAttendanceRecords(
       class_id: classId,
       date,
       status,
-      batch
+      batch: batch || null
     }));
     
     // First, delete any existing records for the same date, class, and batch

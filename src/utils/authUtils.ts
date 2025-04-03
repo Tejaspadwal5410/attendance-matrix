@@ -1,4 +1,3 @@
 
-// This file is now just re-exporting from the auth directory 
-// to maintain backward compatibility
+// Re-export all auth-related functions from the auth module
 export * from './auth';

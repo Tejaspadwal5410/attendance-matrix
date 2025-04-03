@@ -21,22 +21,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
-    // If not logged in, just render the children (login page)
-    return <>{children}</>;
-  }
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
+      {user && <Navbar />}
       <main className="flex-1 container mx-auto py-6 px-4 md:px-6 page-transition">
         {children}
       </main>
-      <footer className="py-4 border-t">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Student Attendance & Marks Management System
-        </div>
-      </footer>
+      {user && (
+        <footer className="py-4 border-t">
+          <div className="container mx-auto text-center text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} Student Attendance & Marks Management System
+          </div>
+        </footer>
+      )}
     </div>
   );
 };

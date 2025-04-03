@@ -25,6 +25,16 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
   }
 }
 
+type ProfileResponse = {
+  id: string;
+  name: string;
+  avatar_url?: string;
+  role: string;
+  class?: string | null;
+  batch?: string | null;
+  board?: string | null;
+}
+
 export async function fetchStudents(classId?: string, batch?: string): Promise<User[]> {
   try {
     let query = supabase
@@ -49,7 +59,7 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Transform data to match User type
-    const students: User[] = data.map(profile => {
+    const students: User[] = (data as ProfileResponse[]).map(profile => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
@@ -98,7 +108,7 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Transform data to match User type
-    const students: User[] = studentsData.map(profile => {
+    const students: User[] = (studentsData as ProfileResponse[]).map(profile => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
