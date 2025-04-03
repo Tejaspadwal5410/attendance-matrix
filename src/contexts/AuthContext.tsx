@@ -95,7 +95,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => {
+  const signUp = async (
+    email: string, 
+    password: string, 
+    name: string, 
+    role: UserRole, 
+    studentClass?: string | null, 
+    batch?: string | null, 
+    board?: string | null,
+    avatarUrl?: string
+  ) => {
     try {
       setLoading(true);
       
@@ -108,7 +117,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             name,
             role,
-            avatar_url: finalAvatarUrl
+            avatar_url: finalAvatarUrl,
+            class: studentClass || null,
+            batch: batch || null,
+            board: board || null
           }
         }
       });

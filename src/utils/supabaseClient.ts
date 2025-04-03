@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 export { supabase } from '@/integrations/supabase/client';
 
@@ -9,7 +10,10 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  avatar_url?: string;
+  avatar_url: string;
+  class?: string | null;
+  batch?: string | null;
+  board?: string | null;
 }
 
 export interface Subject {
@@ -31,6 +35,7 @@ export interface Attendance {
   class_id: string;
   date: string;
   status: 'present' | 'absent';
+  batch?: string | null;
 }
 
 export interface Mark {
@@ -57,7 +62,10 @@ export const MOCK_DATA = {
       email: 'student@example.com',
       name: 'John Doe',
       role: 'student' as UserRole,
-      avatar_url: 'https://i.pravatar.cc/150?img=1'
+      avatar_url: 'https://i.pravatar.cc/150?img=1',
+      class: '10',
+      batch: 'A',
+      board: 'CBSE'
     },
     {
       id: '2',
@@ -78,14 +86,14 @@ export const MOCK_DATA = {
     { id: '4', name: 'Biology', class_id: '2', teacher_id: '2' }
   ],
   attendance: [
-    { id: '1', student_id: '1', class_id: '1', date: '2023-06-01', status: 'present' as const },
-    { id: '2', student_id: '1', class_id: '1', date: '2023-06-02', status: 'present' as const },
-    { id: '3', student_id: '1', class_id: '1', date: '2023-06-03', status: 'absent' as const },
-    { id: '4', student_id: '1', class_id: '1', date: '2023-06-04', status: 'present' as const },
-    { id: '5', student_id: '1', class_id: '1', date: '2023-06-05', status: 'present' as const },
-    { id: '6', student_id: '1', class_id: '2', date: '2023-06-06', status: 'present' as const },
-    { id: '7', student_id: '1', class_id: '2', date: '2023-06-07', status: 'absent' as const },
-    { id: '8', student_id: '1', class_id: '2', date: '2023-06-08', status: 'present' as const }
+    { id: '1', student_id: '1', class_id: '1', date: '2023-06-01', status: 'present' as const, batch: 'A' },
+    { id: '2', student_id: '1', class_id: '1', date: '2023-06-02', status: 'present' as const, batch: 'A' },
+    { id: '3', student_id: '1', class_id: '1', date: '2023-06-03', status: 'absent' as const, batch: 'A' },
+    { id: '4', student_id: '1', class_id: '1', date: '2023-06-04', status: 'present' as const, batch: 'A' },
+    { id: '5', student_id: '1', class_id: '1', date: '2023-06-05', status: 'present' as const, batch: 'A' },
+    { id: '6', student_id: '1', class_id: '2', date: '2023-06-06', status: 'present' as const, batch: 'A' },
+    { id: '7', student_id: '1', class_id: '2', date: '2023-06-07', status: 'absent' as const, batch: 'A' },
+    { id: '8', student_id: '1', class_id: '2', date: '2023-06-08', status: 'present' as const, batch: 'A' }
   ],
   marks: [
     { id: '1', student_id: '1', subject_id: '1', marks: 85, exam_type: 'midterm' as const },

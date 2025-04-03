@@ -25,7 +25,10 @@ export async function fetchUserProfile(userId: string): Promise<User | null> {
       email: email,
       name: profileData.name,
       role: profileData.role as UserRole,
-      avatar_url: profileData.avatar_url
+      avatar_url: profileData.avatar_url || '',
+      class: profileData.class || null,
+      batch: profileData.batch || null,
+      board: profileData.board || null
     };
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -52,25 +55,54 @@ export function getRoleFromUser(user: User | null): {
   };
 }
 
-export async function fetchStudents(): Promise<User[]> {
+export async function fetchStudents(classId?: string, batch?: string): Promise<User[]> {
   try {
-    const { data, error } = await supabase
+    // For demo account, return filtered mock data
+    if (MOCK_DATA.users.filter(u => u.role === 'student').length > 0) {
+      let filteredStudents = MOCK_DATA.users.filter(u => u.role === 'student');
+      
+      if (classId) {
+        filteredStudents = filteredStudents.filter(s => s.class === classId);
+      }
+      
+      if (batch) {
+        filteredStudents = filteredStudents.filter(s => s.batch === batch);
+      }
+      
+      return filteredStudents;
+    }
+    
+    // For real data, query the database
+    let query = supabase
       .from('profiles')
       .select('*')
       .eq('role', 'student');
+    
+    if (classId) {
+      query = query.eq('class', classId);
+    }
+    
+    if (batch) {
+      query = query.eq('batch', batch);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching students:', error);
       return [];
     }
     
-    // Map the profile data to User type
+    // Map the profile data to User type, ensuring avatar_url is never null
     return data.map(profile => ({
       id: profile.id,
       email: '', // Email not stored in profiles table
       name: profile.name,
       role: profile.role as UserRole,
-      avatar_url: profile.avatar_url
+      avatar_url: profile.avatar_url || '',
+      class: profile.class || null,
+      batch: profile.batch || null,
+      board: profile.board || null
     }));
   } catch (error) {
     console.error('Error fetching students:', error);
@@ -99,7 +131,8 @@ export async function fetchClasses(): Promise<any[]> {
 export async function saveAttendanceRecords(
   attendanceData: Record<string, 'present' | 'absent'>, 
   date: string, 
-  classId: string
+  classId: string,
+  batch?: string
 ): Promise<boolean> {
   try {
     // First, create an array of attendance records from the data
@@ -107,7 +140,8 @@ export async function saveAttendanceRecords(
       student_id: studentId,
       class_id: classId,
       date,
-      status
+      status,
+      batch
     }));
     
     if (records.length === 0) {
@@ -138,13 +172,19 @@ export async function saveAttendanceRecords(
   }
 }
 
-export async function fetchAttendanceRecords(date: string, classId: string): Promise<any[]> {
+export async function fetchAttendanceRecords(date: string, classId: string, batch?: string): Promise<any[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('attendance')
       .select('*')
       .eq('date', date)
       .eq('class_id', classId);
+      
+    if (batch) {
+      query = query.eq('batch', batch);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching attendance records:', error);
@@ -210,7 +250,10 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       email: '',
       name: student.name,
       role: student.role as UserRole,
-      avatar_url: student.avatar_url || undefined // Handle null values by converting to undefined
+      avatar_url: student.avatar_url || '', // Handle null values by converting to empty string
+      class: student.class || null,
+      batch: student.batch || null,
+      board: student.board || null
     }));
   } catch (error) {
     console.error('Error fetching students by subject:', error);
@@ -245,5 +288,48 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
   } catch (error) {
     console.error('Error validating student IDs:', error);
     return [];
+  }
+}
+
+export async function addNewStudent(studentData: {
+  name: string,
+  registerNumber: string,
+  class: string,
+  batch: string,
+  board: string
+}): Promise<boolean> {
+  try {
+    // For demo purposes
+    if (MOCK_DATA.users.filter(u => u.role === 'student').length > 0) {
+      // Just simulate adding to mock data
+      toast.success('Student added successfully (Demo Mode)');
+      return true;
+    }
+
+    // For real database
+    const { error } = await supabase
+      .from('profiles')
+      .insert({
+        id: studentData.registerNumber, // Using register number as ID
+        name: studentData.name,
+        role: 'student',
+        class: studentData.class,
+        batch: studentData.batch,
+        board: studentData.board,
+        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(studentData.name)}&background=random`
+      });
+    
+    if (error) {
+      console.error('Error adding student:', error);
+      toast.error('Failed to add student');
+      return false;
+    }
+    
+    toast.success('Student added successfully');
+    return true;
+  } catch (error) {
+    console.error('Error adding student:', error);
+    toast.error('An unexpected error occurred');
+    return false;
   }
 }

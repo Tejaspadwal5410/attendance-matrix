@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { UserRole } from '@/utils/supabaseClient';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,6 +25,9 @@ const signupSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
   role: z.enum(['teacher', 'student']),
+  class: z.string().optional(),
+  batch: z.string().optional(),
+  board: z.string().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -33,6 +38,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 export default function SignupForm() {
   const { signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showStudentFields, setShowStudentFields] = useState(false);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -42,6 +48,9 @@ export default function SignupForm() {
       password: '',
       confirmPassword: '',
       role: 'student',
+      class: '',
+      batch: '',
+      board: '',
     },
   });
 
@@ -52,17 +61,16 @@ export default function SignupForm() {
     try {
       setIsSubmitting(true);
       
-      console.log('Attempting signup with:', { 
-        email: values.email, 
-        name: values.name, 
-        role: values.role 
-      });
+      console.log('Attempting signup with:', values);
       
       const { error } = await signUp(
         values.email,
         values.password,
         values.name,
-        values.role as UserRole
+        values.role as UserRole,
+        values.class,
+        values.batch,
+        values.board
       );
       
       if (!error) {
@@ -72,25 +80,18 @@ export default function SignupForm() {
       } else {
         console.error('Signup error:', error);
         
-        // Highlight form fields that might be causing the issue
         if (error.message?.includes('email')) {
           form.setError('email', { 
             type: 'manual', 
             message: 'This email may already be in use'
           });
+        } else {
+          toast.error(error.message || 'An unexpected error occurred');
         }
       }
     } catch (error: any) {
       console.error('Signup submission error:', error);
       toast.error(error.message || 'An unexpected error occurred');
-      
-      // Highlight form fields that might be causing the issue
-      if (error.message?.includes('email')) {
-        form.setError('email', { 
-          type: 'manual', 
-          message: 'This email may already be in use'
-        });
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -113,7 +114,7 @@ export default function SignupForm() {
                 <FormLabel>Full Name</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="John Doe" 
+                    placeholder="Enter your name" 
                     {...field} 
                     disabled={isSubmitting}
                     className={isSubmitting ? "opacity-70" : ""}
@@ -192,7 +193,10 @@ export default function SignupForm() {
                 <FormLabel>I am a</FormLabel>
                 <FormControl>
                   <RadioGroup
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setShowStudentFields(value === 'student');
+                    }}
                     defaultValue={field.value}
                     className="flex space-x-4"
                     disabled={isSubmitting}
@@ -225,6 +229,97 @@ export default function SignupForm() {
               </FormItem>
             )}
           />
+          
+          {showStudentFields && (
+            <>
+              <FormField
+                control={form.control}
+                name="class"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Class</FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className={isSubmitting ? "opacity-70" : ""}>
+                          <SelectValue placeholder="Select Class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 12 }, (_, i) => (
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                              Class {i + 1}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="batch"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Batch</FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className={isSubmitting ? "opacity-70" : ""}>
+                          <SelectValue placeholder="Select Batch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {['A', 'B', 'C', 'D', 'E'].map((batch) => (
+                            <SelectItem key={batch} value={batch}>
+                              Batch {batch}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="board"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Board</FormLabel>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger className={isSubmitting ? "opacity-70" : ""}>
+                          <SelectValue placeholder="Select Board" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {['CBSE', 'ICSE', 'State Board', 'IB'].map((board) => (
+                            <SelectItem key={board} value={board}>
+                              {board}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
           
           <Button 
             type="submit" 

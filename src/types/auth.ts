@@ -1,12 +1,21 @@
 
-import { User, UserRole } from '../utils/supabaseClient';
+import { User, UserRole } from '@/utils/supabaseClient';
 
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error?: Error | null }>;
-  signOut: () => Promise<{ error?: Error | null }>;
-  signUp: (email: string, password: string, name: string, role: UserRole, avatarUrl?: string) => Promise<{ error?: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string, 
+    password: string, 
+    name: string, 
+    role: UserRole,
+    studentClass?: string | null,
+    batch?: string | null,
+    board?: string | null,
+    avatarUrl?: string
+  ) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<{ error: Error | null }>;
   isTeacher: () => boolean;
   isStudent: () => boolean;
   isDemoUser: () => boolean;

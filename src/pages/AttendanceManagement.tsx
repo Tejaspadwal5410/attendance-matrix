@@ -14,7 +14,8 @@ import {
   Save, 
   Search, 
   User, 
-  X
+  X, 
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,24 +35,37 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
   fetchStudents, 
   fetchClasses, 
   saveAttendanceRecords, 
-  fetchAttendanceRecords 
+  fetchAttendanceRecords,
+  addNewStudent
 } from '../utils/authUtils';
 
 const AttendanceManagement = () => {
   const { user, isTeacher, isDemoUser } = useAuth();
   const [date, setDate] = useState(new Date().toISOString().substring(0, 10));
   const [selectedClass, setSelectedClass] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedBoard, setSelectedBoard] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [attendanceData, setAttendanceData] = useState<Record<string, 'present' | 'absent'>>({});
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newStudent, setNewStudent] = useState({
+    registerNumber: '',
+    name: '',
+    class: '',
+    batch: '',
+    board: ''
+  });
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
 
   // Redirect if not a teacher
   if (!user) {
@@ -117,7 +131,7 @@ const AttendanceManagement = () => {
           setAttendanceData(mockAttendance);
         } else {
           // Fetch real attendance data from the database
-          const records = await fetchAttendanceRecords(date, selectedClass);
+          const records = await fetchAttendanceRecords(date, selectedClass, selectedBatch);
           
           const attendanceMap = records.reduce((acc, curr) => {
             acc[curr.student_id] = curr.status;
@@ -133,7 +147,27 @@ const AttendanceManagement = () => {
     }
     
     loadAttendance();
-  }, [date, selectedClass]);
+  }, [date, selectedClass, selectedBatch]);
+
+  // Load students when class, batch, or board changes
+  useEffect(() => {
+    async function loadStudents() {
+      if (!selectedClass && !selectedBatch) return;
+      
+      setLoading(true);
+      try {
+        const fetchedStudents = await fetchStudents(selectedClass, selectedBatch);
+        setStudents(fetchedStudents);
+      } catch (error) {
+        console.error('Error loading students:', error);
+        toast.error('Failed to load students');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadStudents();
+  }, [selectedClass, selectedBatch, selectedBoard]);
 
   const filteredStudents = students.filter(student => 
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -147,6 +181,14 @@ const AttendanceManagement = () => {
     setSelectedClass(value);
   };
 
+  const handleBatchChange = (value: string) => {
+    setSelectedBatch(value);
+  };
+
+  const handleBoardChange = (value: string) => {
+    setSelectedBoard(value);
+  };
+
   const handleAttendanceChange = (studentId: string, status: 'present' | 'absent') => {
     setAttendanceData(prev => ({
       ...prev,
@@ -155,6 +197,11 @@ const AttendanceManagement = () => {
   };
 
   const handleSaveAttendance = async () => {
+    if (!selectedClass) {
+      toast.error('Please select a class');
+      return;
+    }
+
     if (Object.keys(attendanceData).length === 0) {
       toast.error('No attendance data to save');
       return;
@@ -163,18 +210,15 @@ const AttendanceManagement = () => {
     setSaving(true);
     
     try {
-      if (isDemoUser()) {
-        // Simulate API call for demo users
-        setTimeout(() => {
-          toast.success('Attendance saved successfully (Demo Mode)');
-          setSaving(false);
-        }, 1000);
-      } else {
-        // Save attendance to the database
-        const success = await saveAttendanceRecords(attendanceData, date, selectedClass);
-        if (success) {
-          toast.success('Attendance saved successfully');
-        }
+      const success = await saveAttendanceRecords(
+        attendanceData, 
+        date, 
+        selectedClass,
+        selectedBatch
+      );
+      
+      if (success) {
+        toast.success('Attendance saved successfully');
       }
     } catch (error) {
       console.error('Error saving attendance:', error);
@@ -197,7 +241,53 @@ const AttendanceManagement = () => {
   };
 
   const handleDownloadReport = () => {
+    if (!selectedClass || !selectedBatch) {
+      toast.error('Please select a class and batch to download report');
+      return;
+    }
+    
     toast.success('Attendance report downloaded');
+  };
+
+  const handleAddStudent = async () => {
+    if (!newStudent.registerNumber || !newStudent.name || !newStudent.class || !newStudent.batch || !newStudent.board) {
+      toast.error('All fields are required');
+      return;
+    }
+    
+    setIsAddingStudent(true);
+    
+    try {
+      const success = await addNewStudent(newStudent);
+      
+      if (success) {
+        // Refresh the student list if current filters match the new student
+        if (
+          (!selectedClass || selectedClass === newStudent.class) &&
+          (!selectedBatch || selectedBatch === newStudent.batch) &&
+          (!selectedBoard || selectedBoard === newStudent.board)
+        ) {
+          const fetchedStudents = await fetchStudents(selectedClass, selectedBatch);
+          setStudents(fetchedStudents);
+        }
+        
+        // Reset the form
+        setNewStudent({
+          registerNumber: '',
+          name: '',
+          class: '',
+          batch: '',
+          board: ''
+        });
+        
+        // Close the modal
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Error adding student:', error);
+    } finally {
+      setIsAddingStudent(false);
+    }
   };
 
   return (
@@ -210,18 +300,142 @@ const AttendanceManagement = () => {
               Mark and manage student attendance records
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2"
-            onClick={handleDownloadReport}
-          >
-            <Download className="h-4 w-4" />
-            <span>Download Report</span>
-          </Button>
+          <div className="flex gap-4">
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Student</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={handleDownloadReport}
+            >
+              <Download className="h-4 w-4" />
+              <span>Download Report</span>
+            </Button>
+          </div>
         </div>
 
+        {/* Add Student Modal */}
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Student</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="registerNumber" className="text-sm font-medium">Register Number</label>
+                <Input
+                  id="registerNumber"
+                  type="text"
+                  placeholder="Enter register number"
+                  value={newStudent.registerNumber}
+                  onChange={(e) => setNewStudent({ ...newStudent, registerNumber: e.target.value })}
+                  disabled={isAddingStudent}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="studentName" className="text-sm font-medium">Student Name</label>
+                <Input
+                  id="studentName"
+                  type="text"
+                  placeholder="Enter student name"
+                  value={newStudent.name}
+                  onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                  disabled={isAddingStudent}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="studentClass" className="text-sm font-medium">Class</label>
+                <Select
+                  value={newStudent.class}
+                  onValueChange={(value) => setNewStudent({ ...newStudent, class: value })}
+                  disabled={isAddingStudent}
+                >
+                  <SelectTrigger id="studentClass">
+                    <SelectValue placeholder="Select Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <SelectItem key={i + 1} value={(i + 1).toString()}>
+                        Class {i + 1}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="studentBatch" className="text-sm font-medium">Batch</label>
+                <Select
+                  value={newStudent.batch}
+                  onValueChange={(value) => setNewStudent({ ...newStudent, batch: value })}
+                  disabled={isAddingStudent}
+                >
+                  <SelectTrigger id="studentBatch">
+                    <SelectValue placeholder="Select Batch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['A', 'B', 'C', 'D', 'E'].map((batch) => (
+                      <SelectItem key={batch} value={batch}>
+                        Batch {batch}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="studentBoard" className="text-sm font-medium">Board</label>
+                <Select
+                  value={newStudent.board}
+                  onValueChange={(value) => setNewStudent({ ...newStudent, board: value })}
+                  disabled={isAddingStudent}
+                >
+                  <SelectTrigger id="studentBoard">
+                    <SelectValue placeholder="Select Board" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['CBSE', 'ICSE', 'State Board', 'IB'].map((board) => (
+                      <SelectItem key={board} value={board}>
+                        {board}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsModalOpen(false)}
+                disabled={isAddingStudent}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddStudent}
+                disabled={isAddingStudent}
+              >
+                {isAddingStudent ? (
+                  <>
+                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+                    Adding...
+                  </>
+                ) : 'Add Student'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <Card className="col-span-1">
             <CardHeader className="pb-3">
               <CardTitle className="text-md font-medium flex items-center">
@@ -261,7 +475,7 @@ const AttendanceManagement = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-md font-medium flex items-center">
                 <Clock className="h-4 w-4 mr-2" />
-                Select Class
+                Class
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -270,12 +484,12 @@ const AttendanceManagement = () => {
                 onValueChange={handleClassChange}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a class" />
+                  <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
-                      {cls.name}
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <SelectItem key={i + 1} value={(i + 1).toString()}>
+                      Class {i + 1}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -287,6 +501,58 @@ const AttendanceManagement = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-md font-medium flex items-center">
                 <User className="h-4 w-4 mr-2" />
+                Batch
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={selectedBatch}
+                onValueChange={handleBatchChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select batch" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['A', 'B', 'C', 'D', 'E'].map((batch) => (
+                    <SelectItem key={batch} value={batch}>
+                      Batch {batch}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-md font-medium flex items-center">
+                <User className="h-4 w-4 mr-2" />
+                Board
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={selectedBoard}
+                onValueChange={handleBoardChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select board" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['CBSE', 'ICSE', 'State Board', 'IB'].map((board) => (
+                    <SelectItem key={board} value={board}>
+                      {board}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-1">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-md font-medium flex items-center">
+                <Search className="h-4 w-4 mr-2" />
                 Search Student
               </CardTitle>
             </CardHeader>
@@ -321,7 +587,11 @@ const AttendanceManagement = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {!selectedClass || !selectedBatch ? (
+              <div className="h-32 flex items-center justify-center text-muted-foreground">
+                Please select both class and batch to view the attendance sheet
+              </div>
+            ) : loading ? (
               <div className="h-32 flex items-center justify-center">
                 <div className="h-8 w-8 rounded-full border-4 border-t-transparent border-primary animate-spin"></div>
               </div>
@@ -345,6 +615,11 @@ const AttendanceManagement = () => {
                               {student.name.substring(0, 1).toUpperCase()}
                             </div>
                             <span>{student.name}</span>
+                            {student.class && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                Class {student.class}, Batch {student.batch}
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -381,7 +656,7 @@ const AttendanceManagement = () => {
                     {filteredStudents.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={3} className="text-center h-24 text-muted-foreground">
-                          No students found
+                          No students found. Try changing filters or adding new students.
                         </TableCell>
                       </TableRow>
                     )}
@@ -390,25 +665,27 @@ const AttendanceManagement = () => {
               </div>
             )}
             
-            <div className="mt-4 flex justify-end">
-              <Button 
-                onClick={handleSaveAttendance} 
-                disabled={saving || Object.keys(attendanceData).length === 0}
-                className="flex items-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    <span>Save Attendance</span>
-                  </>
-                )}
-              </Button>
-            </div>
+            {filteredStudents.length > 0 && (
+              <div className="mt-4 flex justify-end">
+                <Button 
+                  onClick={handleSaveAttendance} 
+                  disabled={saving || Object.keys(attendanceData).length === 0}
+                  className="flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>Save Attendance</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
