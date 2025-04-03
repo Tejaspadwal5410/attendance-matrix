@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -24,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { MOCK_DATA } from '@/utils/supabaseClient';
+import { MOCK_DATA, User as UserType } from '@/utils/supabaseClient';
 import { CsvUploader } from '@/components/CsvUploader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchStudents, fetchStudentsBySubject } from '@/utils/authUtils';
@@ -47,13 +46,11 @@ const MarksManagement = () => {
   const [marksData, setMarksData] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("manual");
-  const [students, setStudents] = useState(MOCK_DATA.users.filter(u => u.role === 'student'));
+  const [students, setStudents] = useState<UserType[]>(MOCK_DATA.users.filter(u => u.role === 'student'));
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    // Load students data
     loadStudents();
-    // Load existing marks if any
     if (selectedSubject && selectedExamType) {
       loadExistingMarks();
     }
@@ -62,9 +59,14 @@ const MarksManagement = () => {
   const loadStudents = async () => {
     setLoading(true);
     try {
-      // Get students for this subject
       const subjectStudents = await fetchStudentsBySubject(selectedSubject);
-      setStudents(subjectStudents);
+      
+      const processedStudents = subjectStudents.map(student => ({
+        ...student,
+        avatar_url: student.avatar_url || ''
+      }));
+      
+      setStudents(processedStudents);
     } catch (error) {
       console.error('Error loading students:', error);
     } finally {
@@ -74,7 +76,6 @@ const MarksManagement = () => {
   
   const loadExistingMarks = async () => {
     try {
-      // Check if we're using mock data
       if (MOCK_DATA.marks.length > 0) {
         const mockMarks = MOCK_DATA.marks.filter(
           m => m.subject_id === selectedSubject && m.exam_type === selectedExamType
@@ -89,7 +90,6 @@ const MarksManagement = () => {
         return;
       }
       
-      // Fetch from the database
       const { data, error } = await supabase
         .from('marks')
         .select('*')
@@ -101,7 +101,6 @@ const MarksManagement = () => {
         return;
       }
       
-      // Create a map of student ID to marks
       const marksMap: Record<string, number> = {};
       data.forEach(mark => {
         marksMap[mark.student_id] = mark.marks;
@@ -156,7 +155,6 @@ const MarksManagement = () => {
     setSaving(true);
     
     try {
-      // For mock data
       if (MOCK_DATA.marks.length > 0) {
         setTimeout(() => {
           toast.success('Marks saved successfully');
@@ -165,7 +163,6 @@ const MarksManagement = () => {
         return;
       }
       
-      // Prepare records for insertion/update
       const records = Object.entries(marksData).map(([studentId, marks]) => ({
         student_id: studentId,
         subject_id: selectedSubject,
@@ -173,12 +170,10 @@ const MarksManagement = () => {
         marks
       }));
       
-      // Process each record individually
       let successCount = 0;
       let errorCount = 0;
       
       for (const record of records) {
-        // Check if a record exists
         const { data: existingMarks, error: fetchError } = await supabase
           .from('marks')
           .select('id')
@@ -193,7 +188,6 @@ const MarksManagement = () => {
         }
         
         if (existingMarks && existingMarks.length > 0) {
-          // Update existing record
           const { error: updateError } = await supabase
             .from('marks')
             .update({ marks: record.marks })
@@ -206,7 +200,6 @@ const MarksManagement = () => {
             successCount++;
           }
         } else {
-          // Insert new record
           const { error: insertError } = await supabase
             .from('marks')
             .insert([record]);
@@ -234,7 +227,6 @@ const MarksManagement = () => {
   };
 
   const handleDownloadReport = () => {
-    // Create CSV content
     let csvContent = "Student ID,Student Name,Marks\n";
     
     filteredStudents.forEach(student => {
@@ -242,7 +234,6 @@ const MarksManagement = () => {
       csvContent += `${student.id},${student.name},${marks}\n`;
     });
     
-    // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -254,7 +245,6 @@ const MarksManagement = () => {
   };
 
   const handleUploadSuccess = () => {
-    // Refresh marks data
     loadExistingMarks();
     toast.success('Marks uploaded successfully');
   };
@@ -527,12 +517,10 @@ const MarksManagement = () => {
                       variant="outline" 
                       className="w-full text-xs" 
                       onClick={() => {
-                        // Generate sample CSV
                         const csvHeader = "student_id,marks\n";
                         const csvData = students.slice(0, 3).map(s => `${s.id},85`).join("\n");
                         const csvContent = csvHeader + csvData;
                         
-                        // Create blob and download
                         const blob = new Blob([csvContent], { type: 'text/csv' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');

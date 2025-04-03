@@ -210,7 +210,7 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       email: '',
       name: student.name,
       role: student.role as UserRole,
-      avatar_url: student.avatar_url
+      avatar_url: student.avatar_url || undefined // Handle null values by converting to undefined
     }));
   } catch (error) {
     console.error('Error fetching students by subject:', error);
