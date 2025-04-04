@@ -1,5 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
+
+// Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
 
 // Define types locally to avoid circular references
@@ -62,17 +64,34 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
       return [];
     }
     
-    // Manual mapping with explicit typing to avoid circular references
-    return (data || []).map((record: any) => ({
-      id: record.id,
-      email: '', // Email is not stored in profiles table
-      name: record.name,
-      role: record.role as UserRole,
-      avatar_url: record.avatar_url || '',
-      class: record.class || null,
-      batch: record.batch || null,
-      board: record.board || null
-    }));
+    // Map data to User type using explicit type assertion
+    return (data || []).map(record => {
+      const user: User = {
+        id: record.id,
+        email: '', // Email is not stored in profiles table
+        name: record.name,
+        role: record.role as UserRole,
+        avatar_url: record.avatar_url || '',
+        class: null, // These fields may not exist in the current database schema
+        batch: null,
+        board: null
+      };
+      
+      // Add optional properties if they exist in the record
+      if ('class' in record) {
+        user.class = (record as any).class;
+      }
+      
+      if ('batch' in record) {
+        user.batch = (record as any).batch;
+      }
+      
+      if ('board' in record) {
+        user.board = (record as any).board;
+      }
+      
+      return user;
+    });
   } catch (error) {
     console.error('Error fetching students:', error);
     return [];
@@ -107,17 +126,34 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       return [];
     }
     
-    // Manual mapping with explicit typing to avoid circular references
-    return (studentsData || []).map((record: any) => ({
-      id: record.id,
-      email: '', // Email is not stored in profiles table
-      name: record.name,
-      role: 'student' as UserRole,
-      avatar_url: record.avatar_url || '',
-      class: record.class || null,
-      batch: record.batch || null,
-      board: record.board || null
-    }));
+    // Map data to User type using explicit type assertion
+    return (studentsData || []).map(record => {
+      const user: User = {
+        id: record.id,
+        email: '', // Email is not stored in profiles table
+        name: record.name,
+        role: 'student',
+        avatar_url: record.avatar_url || '',
+        class: null,
+        batch: null,
+        board: null
+      };
+      
+      // Add optional properties if they exist in the record
+      if ('class' in record) {
+        user.class = (record as any).class;
+      }
+      
+      if ('batch' in record) {
+        user.batch = (record as any).batch;
+      }
+      
+      if ('board' in record) {
+        user.board = (record as any).board;
+      }
+      
+      return user;
+    });
   } catch (error) {
     console.error('Error fetching students by subject:', error);
     return [];

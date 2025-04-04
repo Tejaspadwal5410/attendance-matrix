@@ -1,7 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { MOCK_DATA } from '../supabaseClient';
 import { toast } from 'sonner';
+
+// Define the MOCK_DATA import directly to avoid circular references
+import { MOCK_DATA } from '../supabaseClient';
 
 // Define Attendance type locally to avoid circular references
 export interface Attendance {
@@ -37,11 +39,11 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Use explicit typing to avoid circular references
-    return (data || []).map((record: any) => ({
+    // Use type assertion to avoid circular references
+    return (data || []).map((record) => ({
       id: record.id,
-      student_id: record.student_id,
-      class_id: record.class_id,
+      student_id: record.student_id || '',
+      class_id: record.class_id || '',
       date: record.date,
       status: record.status as 'present' | 'absent',
       batch: record.batch
