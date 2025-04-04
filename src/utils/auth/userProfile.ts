@@ -1,15 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole, MOCK_DATA } from '../supabaseClient';
+import { User, UserRole } from '../authUtils';
 
-type ProfileResponse = {
+// Define ProfileResponse type locally to avoid circular references
+interface ProfileResponse {
   id: string;
   name: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   role: string;
   class?: string | null;
   batch?: string | null;
   board?: string | null;
+  created_at: string;
 }
 
 export async function fetchUserProfile(userId: string): Promise<User | null> {
@@ -31,7 +33,7 @@ export async function fetchUserProfile(userId: string): Promise<User | null> {
       id: profile.id,
       email: '', // Email is not stored in profiles table
       name: profile.name,
-      role: profile.role as UserRole,
+      role: profile.role as UserRole, // Use type assertion to match UserRole enum
       avatar_url: profile.avatar_url || '',
       class: profile.class || null,
       batch: profile.batch || null,
@@ -72,7 +74,7 @@ export function getDemoUser(email: string): User | null {
   return null;
 }
 
-export function getRoleFromUser(user: any): 'teacher' | 'student' | null {
+export function getRoleFromUser(user: any): UserRole | null {
   if (!user) return null;
   
   // Check if role is in app_metadata
