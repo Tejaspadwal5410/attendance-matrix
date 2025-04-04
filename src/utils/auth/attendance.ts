@@ -49,7 +49,7 @@ export async function fetchAttendanceRecords(
     }
     
     // Convert data to our defined type using manual mapping to avoid circular references
-    return (data || []).map((record) => ({
+    return (data || []).map((record: any) => ({
       id: record.id,
       student_id: record.student_id,
       class_id: record.class_id,

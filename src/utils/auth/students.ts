@@ -41,7 +41,7 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
 }
 
 // Define ProfileResponse interface to match database schema
-export interface ProfileResponse {
+interface ProfileResponse {
   id: string;
   name: string;
   avatar_url?: string | null;
@@ -76,7 +76,7 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Map the response to User objects with explicit manual mapping
-    return (data || []).map((record) => {
+    return (data || []).map((record: any) => {
       return {
         id: record.id,
         email: '', // Email is not stored in profiles table
@@ -123,7 +123,7 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Map the response to User objects with explicit manual mapping
-    return (studentsData || []).map((record) => {
+    return (studentsData || []).map((record: any) => {
       return {
         id: record.id,
         email: '', // Email is not stored in profiles table
