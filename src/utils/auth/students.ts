@@ -2,10 +2,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_DATA } from '../supabaseClient';
 
-// Define UserRole locally to avoid circular dependencies
+// Define types locally to avoid circular references
 export type UserRole = 'teacher' | 'student';
 
-// Define the User type locally to break circular references
 export interface User {
   id: string;
   email: string;
@@ -40,18 +39,6 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
   }
 }
 
-// Define ProfileResponse interface to match database schema
-interface ProfileResponse {
-  id: string;
-  name: string;
-  avatar_url?: string | null;
-  role: string;
-  class?: string | null;
-  batch?: string | null;
-  board?: string | null;
-  created_at: string;
-}
-
 export async function fetchStudents(classId?: string, batch?: string): Promise<User[]> {
   try {
     let query = supabase
@@ -75,19 +62,17 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
       return [];
     }
     
-    // Map the response to User objects with explicit manual mapping
-    return (data || []).map((record: any) => {
-      return {
-        id: record.id,
-        email: '', // Email is not stored in profiles table
-        name: record.name,
-        role: record.role as UserRole,
-        avatar_url: record.avatar_url || '',
-        class: record.class || null,
-        batch: record.batch || null,
-        board: record.board || null
-      };
-    });
+    // Manual mapping with explicit typing to avoid circular references
+    return (data || []).map((record: any) => ({
+      id: record.id,
+      email: '', // Email is not stored in profiles table
+      name: record.name,
+      role: record.role as UserRole,
+      avatar_url: record.avatar_url || '',
+      class: record.class || null,
+      batch: record.batch || null,
+      board: record.board || null
+    }));
   } catch (error) {
     console.error('Error fetching students:', error);
     return [];
@@ -122,19 +107,17 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       return [];
     }
     
-    // Map the response to User objects with explicit manual mapping
-    return (studentsData || []).map((record: any) => {
-      return {
-        id: record.id,
-        email: '', // Email is not stored in profiles table
-        name: record.name,
-        role: 'student' as UserRole,
-        avatar_url: record.avatar_url || '',
-        class: record.class || null,
-        batch: record.batch || null,
-        board: record.board || null
-      };
-    });
+    // Manual mapping with explicit typing to avoid circular references
+    return (studentsData || []).map((record: any) => ({
+      id: record.id,
+      email: '', // Email is not stored in profiles table
+      name: record.name,
+      role: 'student' as UserRole,
+      avatar_url: record.avatar_url || '',
+      class: record.class || null,
+      batch: record.batch || null,
+      board: record.board || null
+    }));
   } catch (error) {
     console.error('Error fetching students by subject:', error);
     return [];

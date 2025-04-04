@@ -3,24 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { MOCK_DATA } from '../supabaseClient';
 import { toast } from 'sonner';
 
-// Define Attendance type locally to break circular references
+// Define Attendance type locally to avoid circular references
 export interface Attendance {
   id: string;
   student_id: string;
   class_id: string;
   date: string;
   status: 'present' | 'absent';
-  batch?: string | null;
-}
-
-// Define the database response type to match what Supabase returns
-interface AttendanceRecord {
-  id: string;
-  student_id: string;
-  class_id: string;
-  date: string;
-  status: string;
-  created_at: string;
   batch?: string | null;
 }
 
@@ -48,7 +37,7 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Convert data to our defined type using manual mapping to avoid circular references
+    // Use explicit typing to avoid circular references
     return (data || []).map((record: any) => ({
       id: record.id,
       student_id: record.student_id,
