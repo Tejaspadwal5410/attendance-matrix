@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { Layout } from "./components/Layout";
 import Index from "./pages/Index";
 import StudentDashboard from "./pages/StudentDashboard";
 import TeacherDashboard from "./pages/TeacherDashboard";
@@ -22,25 +21,23 @@ const App = () => (
         <AuthProvider>
           <Toaster />
           <Sonner />
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              
-              {/* Student Routes */}
-              <Route path="/student" element={<StudentDashboard />} />
-              <Route path="/my-attendance" element={<StudentDashboard />} />
-              <Route path="/my-marks" element={<StudentDashboard />} />
-              
-              {/* Teacher Routes */}
-              <Route path="/teacher" element={<TeacherDashboard />} />
-              <Route path="/attendance" element={<AttendanceManagement />} />
-              <Route path="/marks" element={<MarksManagement />} />
-              <Route path="/reports" element={<TeacherDashboard />} />
-              
-              {/* Catch-all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            
+            {/* Student Routes */}
+            <Route path="/student" element={<StudentDashboard />} />
+            <Route path="/my-attendance" element={<StudentDashboard />} />
+            <Route path="/my-marks" element={<StudentDashboard />} />
+            
+            {/* Teacher Routes */}
+            <Route path="/teacher" element={<TeacherDashboard />} />
+            <Route path="/attendance" element={<AttendanceManagement />} />
+            <Route path="/marks" element={<MarksManagement />} />
+            <Route path="/reports" element={<TeacherDashboard />} />
+            
+            {/* Catch-all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
