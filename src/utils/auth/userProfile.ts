@@ -15,14 +15,15 @@ export interface User {
 }
 
 // Define ProfileResponse type locally to avoid circular references
-type ProfileResponse = {
+interface ProfileResponse {
   id: string;
   name: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   role: string;
   class?: string | null;
   batch?: string | null;
   board?: string | null;
+  created_at: string;
 }
 
 export async function fetchUserProfile(userId: string): Promise<User | null> {

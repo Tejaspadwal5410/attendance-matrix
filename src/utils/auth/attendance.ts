@@ -13,6 +13,17 @@ export interface Attendance {
   batch?: string | null;
 }
 
+// Define the database response type to match what Supabase returns
+interface AttendanceRecord {
+  id: string;
+  student_id: string;
+  class_id: string;
+  date: string;
+  status: string;
+  created_at: string;
+  batch?: string | null;
+}
+
 export async function fetchAttendanceRecords(
   date: string,
   classId: string, 
@@ -38,7 +49,7 @@ export async function fetchAttendanceRecords(
     }
     
     // Convert data to our defined type using manual mapping to avoid circular references
-    return (data || []).map(item => ({
+    return (data || []).map((item: AttendanceRecord) => ({
       id: item.id,
       student_id: item.student_id,
       class_id: item.class_id,

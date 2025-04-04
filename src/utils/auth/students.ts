@@ -38,14 +38,15 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
 }
 
 // Define this type locally instead of relying on imported types
-type ProfileResponse = {
+export interface ProfileResponse {
   id: string;
   name: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   role: string;
   class?: string | null;
   batch?: string | null;
   board?: string | null;
+  created_at: string;
 }
 
 export async function fetchStudents(classId?: string, batch?: string): Promise<User[]> {
@@ -72,7 +73,7 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Map the response to User objects with explicit manual mapping
-    return (data || []).map((profile) => {
+    return (data || []).map((profile: ProfileResponse) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
@@ -119,7 +120,7 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Map the response to User objects with explicit manual mapping
-    return (studentsData || []).map((profile) => {
+    return (studentsData || []).map((profile: ProfileResponse) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
