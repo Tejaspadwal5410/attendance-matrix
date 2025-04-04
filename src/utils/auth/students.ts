@@ -1,9 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '../authUtils';
-
-// Import MOCK_DATA directly to avoid circular references
-import { MOCK_DATA } from '../supabaseClient';
+import { User, MOCK_DATA, UserRole } from '../supabaseClient';
 
 export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
   try {
@@ -26,6 +23,16 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
     console.error('Error in validateStudentIds:', error);
     return [];
   }
+}
+
+type ProfileResponse = {
+  id: string;
+  name: string;
+  avatar_url?: string;
+  role: string;
+  class?: string | null;
+  batch?: string | null;
+  board?: string | null;
 }
 
 export async function fetchStudents(classId?: string, batch?: string): Promise<User[]> {
@@ -51,34 +58,21 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
       return [];
     }
     
-    // Map data to User type using explicit type assertion
-    return (data || []).map((record: any) => {
-      const user: User = {
-        id: record.id,
+    // Transform data to match User type with type assertion to avoid recursion
+    const students: User[] = ((data || []) as unknown as ProfileResponse[]).map(profile => {
+      return {
+        id: profile.id,
         email: '', // Email is not stored in profiles table
-        name: record.name,
-        role: record.role as UserRole,
-        avatar_url: record.avatar_url || '',
-        class: null,
-        batch: null,
-        board: null
+        name: profile.name,
+        role: profile.role as UserRole,
+        avatar_url: profile.avatar_url || '',
+        class: profile.class || null,
+        batch: profile.batch || null,
+        board: profile.board || null
       };
-      
-      // Add optional properties if they exist in the record
-      if ('class' in record) {
-        user.class = record.class;
-      }
-      
-      if ('batch' in record) {
-        user.batch = record.batch;
-      }
-      
-      if ('board' in record) {
-        user.board = record.board;
-      }
-      
-      return user;
     });
+    
+    return students;
   } catch (error) {
     console.error('Error fetching students:', error);
     return [];
@@ -113,34 +107,21 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       return [];
     }
     
-    // Map data to User type using explicit type assertion
-    return (studentsData || []).map((record: any) => {
-      const user: User = {
-        id: record.id,
+    // Transform data to match User type with type assertion to avoid recursion
+    const students: User[] = (studentsData as unknown as ProfileResponse[]).map(profile => {
+      return {
+        id: profile.id,
         email: '', // Email is not stored in profiles table
-        name: record.name,
-        role: 'student',
-        avatar_url: record.avatar_url || '',
-        class: null,
-        batch: null,
-        board: null
+        name: profile.name,
+        role: 'student' as UserRole,
+        avatar_url: profile.avatar_url || '',
+        class: profile.class || null,
+        batch: profile.batch || null,
+        board: profile.board || null
       };
-      
-      // Add optional properties if they exist in the record
-      if ('class' in record) {
-        user.class = record.class;
-      }
-      
-      if ('batch' in record) {
-        user.batch = record.batch;
-      }
-      
-      if ('board' in record) {
-        user.board = record.board;
-      }
-      
-      return user;
     });
+    
+    return students;
   } catch (error) {
     console.error('Error fetching students by subject:', error);
     return [];
