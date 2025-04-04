@@ -37,7 +37,7 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
   }
 }
 
-// Define this type locally instead of relying on imported types to avoid circular references
+// Define this type locally instead of relying on imported types
 type ProfileResponse = {
   id: string;
   name: string;
@@ -71,8 +71,8 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
       return [];
     }
     
-    // Map the response to User objects with explicit typing
-    const students: User[] = (data || []).map((profile: any) => {
+    // Map the response to User objects with explicit manual mapping
+    return (data || []).map((profile) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
@@ -84,8 +84,6 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
         board: profile.board || null
       };
     });
-    
-    return students;
   } catch (error) {
     console.error('Error fetching students:', error);
     return [];
@@ -120,8 +118,8 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       return [];
     }
     
-    // Map the response to User objects with explicit typing
-    const students: User[] = (studentsData || []).map((profile: any) => {
+    // Map the response to User objects with explicit manual mapping
+    return (studentsData || []).map((profile) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
@@ -133,8 +131,6 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
         board: profile.board || null
       };
     });
-    
-    return students;
   } catch (error) {
     console.error('Error fetching students by subject:', error);
     return [];

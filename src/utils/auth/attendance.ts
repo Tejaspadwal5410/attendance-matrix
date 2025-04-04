@@ -37,8 +37,15 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Use explicit type casting to break the circular reference
-    return (data || []) as unknown as Attendance[];
+    // Convert data to our defined type using manual mapping to avoid circular references
+    return (data || []).map(item => ({
+      id: item.id,
+      student_id: item.student_id,
+      class_id: item.class_id,
+      date: item.date,
+      status: item.status as 'present' | 'absent',
+      batch: item.batch
+    }));
   } catch (error) {
     console.error('Error in fetchAttendanceRecords:', error);
     return [];
