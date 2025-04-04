@@ -1,22 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { User, UserRole } from '../authUtils';
 
 // Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
-
-// Define types locally to avoid circular references
-export type UserRole = 'teacher' | 'student';
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  avatar_url: string;
-  class?: string | null;
-  batch?: string | null;
-  board?: string | null;
-}
 
 export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
   try {
@@ -65,29 +52,29 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Map data to User type using explicit type assertion
-    return (data || []).map(record => {
+    return (data || []).map((record: any) => {
       const user: User = {
         id: record.id,
         email: '', // Email is not stored in profiles table
         name: record.name,
         role: record.role as UserRole,
         avatar_url: record.avatar_url || '',
-        class: null, // These fields may not exist in the current database schema
+        class: null,
         batch: null,
         board: null
       };
       
       // Add optional properties if they exist in the record
       if ('class' in record) {
-        user.class = (record as any).class;
+        user.class = record.class;
       }
       
       if ('batch' in record) {
-        user.batch = (record as any).batch;
+        user.batch = record.batch;
       }
       
       if ('board' in record) {
-        user.board = (record as any).board;
+        user.board = record.board;
       }
       
       return user;
@@ -127,7 +114,7 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Map data to User type using explicit type assertion
-    return (studentsData || []).map(record => {
+    return (studentsData || []).map((record: any) => {
       const user: User = {
         id: record.id,
         email: '', // Email is not stored in profiles table
@@ -141,15 +128,15 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       
       // Add optional properties if they exist in the record
       if ('class' in record) {
-        user.class = (record as any).class;
+        user.class = record.class;
       }
       
       if ('batch' in record) {
-        user.batch = (record as any).batch;
+        user.batch = record.batch;
       }
       
       if ('board' in record) {
-        user.board = (record as any).board;
+        user.board = record.board;
       }
       
       return user;

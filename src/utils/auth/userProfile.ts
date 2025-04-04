@@ -1,20 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-
-// Define UserRole type locally to avoid circular references
-export type UserRole = 'teacher' | 'student';
-
-// Define User type locally to avoid circular references
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  avatar_url: string;
-  class?: string | null;
-  batch?: string | null;
-  board?: string | null;
-}
+import { User, UserRole } from '../authUtils';
 
 // Define ProfileResponse type locally to avoid circular references
 interface ProfileResponse {
@@ -88,7 +74,7 @@ export function getDemoUser(email: string): User | null {
   return null;
 }
 
-export function getRoleFromUser(user: any): 'teacher' | 'student' | null {
+export function getRoleFromUser(user: any): UserRole | null {
   if (!user) return null;
   
   // Check if role is in app_metadata

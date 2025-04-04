@@ -1,19 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Attendance } from '../authUtils';
 
 // Define the MOCK_DATA import directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
-
-// Define Attendance type locally to avoid circular references
-export interface Attendance {
-  id: string;
-  student_id: string;
-  class_id: string;
-  date: string;
-  status: 'present' | 'absent';
-  batch?: string | null;
-}
 
 export async function fetchAttendanceRecords(
   date: string,
@@ -39,14 +30,14 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Use type assertion to avoid circular references
-    return (data || []).map((record) => ({
+    // Use explicit mapping with type assertion to avoid recursion
+    return (data || []).map((record: any) => ({
       id: record.id,
       student_id: record.student_id || '',
       class_id: record.class_id || '',
       date: record.date,
       status: record.status as 'present' | 'absent',
-      batch: record.batch
+      batch: record.batch // Handle batch property explicitly
     }));
   } catch (error) {
     console.error('Error in fetchAttendanceRecords:', error);
@@ -75,7 +66,7 @@ export async function saveAttendanceRecords(
       .delete()
       .eq('date', date)
       .eq('class_id', classId)
-      .eq('batch', batch || '');
+      .eq('batch', batch || null);
       
     if (deleteError) {
       console.error('Error deleting existing attendance:', deleteError);
