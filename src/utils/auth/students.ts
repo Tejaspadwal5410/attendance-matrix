@@ -72,7 +72,7 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Map the response to User objects with explicit typing
-    const students: User[] = (data || []).map((profile: ProfileResponse) => {
+    const students: User[] = (data || []).map((profile: any) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table
@@ -121,7 +121,7 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Map the response to User objects with explicit typing
-    const students: User[] = (studentsData || []).map((profile: ProfileResponse) => {
+    const students: User[] = (studentsData || []).map((profile: any) => {
       return {
         id: profile.id,
         email: '', // Email is not stored in profiles table

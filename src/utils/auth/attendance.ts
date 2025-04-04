@@ -38,7 +38,7 @@ export async function fetchAttendanceRecords(
     }
     
     // Use explicit type casting to break the circular reference
-    return (data || []) as Attendance[];
+    return (data || []) as unknown as Attendance[];
   } catch (error) {
     console.error('Error in fetchAttendanceRecords:', error);
     return [];

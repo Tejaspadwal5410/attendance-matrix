@@ -1,6 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole, MOCK_DATA } from '../supabaseClient';
+import { UserRole, MOCK_DATA } from '../supabaseClient';
+
+// Define User type locally to avoid circular references
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar_url: string;
+  class?: string | null;
+  batch?: string | null;
+  board?: string | null;
+}
 
 // Define ProfileResponse type locally to avoid circular references
 type ProfileResponse = {
