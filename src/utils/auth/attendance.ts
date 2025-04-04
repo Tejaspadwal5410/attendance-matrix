@@ -30,7 +30,7 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Use explicit mapping with type assertion to avoid recursion
+    // Use explicit type assertions to avoid type recursion
     return (data || []).map((record: any) => ({
       id: record.id,
       student_id: record.student_id || '',

@@ -22,6 +22,16 @@ export interface Attendance {
   batch?: string | null;
 }
 
+// Define types for functions to avoid circular dependencies
+type AttendanceRecord = {
+  id: string;
+  student_id: string;
+  class_id: string;
+  date: string;
+  status: 'present' | 'absent';
+  batch?: string | null;
+};
+
 // Export selective utilities with explicit imports
 export { fetchAttendanceRecords, saveAttendanceRecords, getMockAttendance, saveMockAttendance } from './auth/attendance';
 export { fetchStudents, fetchStudentsBySubject, validateStudentIds, getMockStudents, getMockStudentsBySubject, addNewStudent } from './auth/students';

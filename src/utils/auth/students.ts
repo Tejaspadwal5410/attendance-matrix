@@ -51,34 +51,17 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
       return [];
     }
     
-    // Map data to User type using explicit type assertion
-    return (data || []).map((record: any) => {
-      const user: User = {
-        id: record.id,
-        email: '', // Email is not stored in profiles table
-        name: record.name,
-        role: record.role as UserRole,
-        avatar_url: record.avatar_url || '',
-        class: null,
-        batch: null,
-        board: null
-      };
-      
-      // Add optional properties if they exist in the record
-      if ('class' in record) {
-        user.class = record.class;
-      }
-      
-      if ('batch' in record) {
-        user.batch = record.batch;
-      }
-      
-      if ('board' in record) {
-        user.board = record.board;
-      }
-      
-      return user;
-    });
+    // Use explicit type assertions to avoid recursion
+    return (data || []).map((record: any) => ({
+      id: record.id,
+      email: '', // Email is not stored in profiles table
+      name: record.name,
+      role: record.role as UserRole,
+      avatar_url: record.avatar_url || '',
+      class: record.class || null,
+      batch: record.batch || null,
+      board: record.board || null
+    }));
   } catch (error) {
     console.error('Error fetching students:', error);
     return [];
@@ -113,34 +96,17 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
       return [];
     }
     
-    // Map data to User type using explicit type assertion
-    return (studentsData || []).map((record: any) => {
-      const user: User = {
-        id: record.id,
-        email: '', // Email is not stored in profiles table
-        name: record.name,
-        role: 'student',
-        avatar_url: record.avatar_url || '',
-        class: null,
-        batch: null,
-        board: null
-      };
-      
-      // Add optional properties if they exist in the record
-      if ('class' in record) {
-        user.class = record.class;
-      }
-      
-      if ('batch' in record) {
-        user.batch = record.batch;
-      }
-      
-      if ('board' in record) {
-        user.board = record.board;
-      }
-      
-      return user;
-    });
+    // Use explicit type assertions to avoid recursion
+    return (studentsData || []).map((record: any) => ({
+      id: record.id,
+      email: '', // Email is not stored in profiles table
+      name: record.name,
+      role: 'student' as UserRole,
+      avatar_url: record.avatar_url || '',
+      class: record.class || null,
+      batch: record.batch || null,
+      board: record.board || null
+    }));
   } catch (error) {
     console.error('Error fetching students by subject:', error);
     return [];
