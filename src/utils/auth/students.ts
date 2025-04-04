@@ -1,6 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { MOCK_DATA, UserRole } from '../supabaseClient';
+import { MOCK_DATA } from '../supabaseClient';
+
+// Define UserRole locally to avoid circular dependencies
+export type UserRole = 'teacher' | 'student';
 
 // Define the User type locally to break circular references
 export interface User {
@@ -37,7 +40,7 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
   }
 }
 
-// Define this type locally instead of relying on imported types
+// Define ProfileResponse interface to match database schema
 export interface ProfileResponse {
   id: string;
   name: string;
@@ -73,16 +76,16 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Map the response to User objects with explicit manual mapping
-    return (data || []).map((profile: ProfileResponse) => {
+    return (data || []).map((record) => {
       return {
-        id: profile.id,
+        id: record.id,
         email: '', // Email is not stored in profiles table
-        name: profile.name,
-        role: profile.role as UserRole,
-        avatar_url: profile.avatar_url || '',
-        class: profile.class || null,
-        batch: profile.batch || null,
-        board: profile.board || null
+        name: record.name,
+        role: record.role as UserRole,
+        avatar_url: record.avatar_url || '',
+        class: record.class || null,
+        batch: record.batch || null,
+        board: record.board || null
       };
     });
   } catch (error) {
@@ -120,16 +123,16 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Map the response to User objects with explicit manual mapping
-    return (studentsData || []).map((profile: ProfileResponse) => {
+    return (studentsData || []).map((record) => {
       return {
-        id: profile.id,
+        id: record.id,
         email: '', // Email is not stored in profiles table
-        name: profile.name,
+        name: record.name,
         role: 'student' as UserRole,
-        avatar_url: profile.avatar_url || '',
-        class: profile.class || null,
-        batch: profile.batch || null,
-        board: profile.board || null
+        avatar_url: record.avatar_url || '',
+        class: record.class || null,
+        batch: record.batch || null,
+        board: record.board || null
       };
     });
   } catch (error) {

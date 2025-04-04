@@ -1,6 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole, MOCK_DATA } from '../supabaseClient';
+
+// Define UserRole type locally to avoid circular references
+export type UserRole = 'teacher' | 'student';
 
 // Define User type locally to avoid circular references
 export interface User {

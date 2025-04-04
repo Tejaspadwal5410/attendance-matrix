@@ -49,13 +49,13 @@ export async function fetchAttendanceRecords(
     }
     
     // Convert data to our defined type using manual mapping to avoid circular references
-    return (data || []).map((item: AttendanceRecord) => ({
-      id: item.id,
-      student_id: item.student_id,
-      class_id: item.class_id,
-      date: item.date,
-      status: item.status as 'present' | 'absent',
-      batch: item.batch
+    return (data || []).map((record) => ({
+      id: record.id,
+      student_id: record.student_id,
+      class_id: record.class_id,
+      date: record.date,
+      status: record.status as 'present' | 'absent',
+      batch: record.batch
     }));
   } catch (error) {
     console.error('Error in fetchAttendanceRecords:', error);
