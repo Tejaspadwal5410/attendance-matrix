@@ -44,9 +44,8 @@ export type AttendanceRecord = {
 
 // Export selective utilities with explicit imports
 export { fetchAttendanceRecords, saveAttendanceRecords, getMockAttendance, saveMockAttendance } from './auth/attendance';
-export { fetchStudents, fetchStudentsBySubject, getMockStudents, getMockStudentsBySubject, addNewStudent } from './auth/students';
+export { fetchStudents, fetchStudentsBySubject, getMockStudents, getMockStudentsBySubject, addNewStudent, validateStudentIds } from './auth/students';
 export { fetchClasses } from './auth/classes';
 export { fetchUserProfile, getDemoUser, getRoleFromUser } from './auth/userProfile';
 
-// Remove the duplicated validateStudentIds function from here
-// It will be imported from ./auth/students.ts
+// Remove the duplicated validateStudentIds function declaration

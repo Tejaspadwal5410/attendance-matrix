@@ -1,117 +1,84 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-
-// Import types directly to avoid circular references
-import { Attendance } from '../authUtils';
-
-// Import MOCK_DATA directly to avoid circular references
+import { Attendance, AttendanceRecord } from '../authUtils';
 import { MOCK_DATA } from '../supabaseClient';
 
-export async function fetchAttendanceRecords(
-  date: string,
-  classId: string, 
-  batch?: string
-): Promise<Attendance[]> {
+// Use explicit type definitions to avoid circular references
+export async function fetchAttendanceRecords(classId?: string, date?: string, batch?: string) {
   try {
-    let query = supabase
-      .from('attendance')
-      .select('*')
-      .eq('date', date)
-      .eq('class_id', classId);
-      
+    let query = supabase.from('attendance').select('*');
+    
+    if (classId) {
+      query = query.eq('class_id', classId);
+    }
+    
+    if (date) {
+      query = query.eq('date', date);
+    }
+    
     if (batch) {
       query = query.eq('batch', batch);
     }
     
     const { data, error } = await query;
     
-    if (error) {
-      console.error('Error fetching attendance:', error);
-      toast.error('Failed to load attendance records');
-      return [];
-    }
+    if (error) throw error;
     
-    // Use explicit type casting to avoid type recursion
-    return (data || []).map((record: any) => ({
+    // Use explicit typing to avoid circular references
+    const attendanceRecords: AttendanceRecord[] = data ? data.map(record => ({
       id: record.id,
-      student_id: record.student_id || '',
-      class_id: record.class_id || '',
+      student_id: record.student_id,
+      class_id: record.class_id,
       date: record.date,
       status: record.status as 'present' | 'absent',
-      batch: record.batch // Handle batch property explicitly
-    }));
+      batch: record.batch
+    })) : [];
+    
+    return attendanceRecords;
   } catch (error) {
-    console.error('Error in fetchAttendanceRecords:', error);
+    console.error('Error fetching attendance:', error);
     return [];
   }
 }
 
-export async function saveAttendanceRecords(
-  attendanceData: Record<string, 'present' | 'absent'>,
-  date: string,
-  classId: string,
-  batch?: string
-): Promise<boolean> {
+export async function saveAttendanceRecords(records: Attendance[]): Promise<boolean> {
   try {
-    const records = Object.entries(attendanceData).map(([studentId, status]) => ({
-      student_id: studentId,
-      class_id: classId,
-      date,
-      status,
-      batch: batch || null
-    }));
+    if (!records || records.length === 0) return false;
     
-    // First, delete any existing records for the same date, class, and batch
-    const { error: deleteError } = await supabase
-      .from('attendance')
-      .delete()
-      .eq('date', date)
-      .eq('class_id', classId)
-      .eq('batch', batch || null);
-      
-    if (deleteError) {
-      console.error('Error deleting existing attendance:', deleteError);
-      toast.error('Failed to update attendance records');
-      return false;
-    }
+    // Perform batch upsert to attendance table
+    const { error } = await supabase.from('attendance').upsert(
+      records.map(record => ({
+        id: record.id,
+        student_id: record.student_id,
+        class_id: record.class_id,
+        date: record.date,
+        status: record.status,
+        batch: record.batch
+      }))
+    );
     
-    // Then, insert the new records
-    const { error: insertError } = await supabase
-      .from('attendance')
-      .insert(records);
-      
-    if (insertError) {
-      console.error('Error inserting attendance:', insertError);
-      toast.error('Failed to save attendance records');
-      return false;
-    }
+    if (error) throw error;
     
     return true;
   } catch (error) {
-    console.error('Error in saveAttendanceRecords:', error);
+    console.error('Error saving attendance:', error);
     return false;
   }
 }
 
-export function getMockAttendance(date: string, classId: string, batch?: string): Attendance[] {
-  return MOCK_DATA.attendance.filter(
-    a => a.date === date && a.class_id === classId && (!batch || a.batch === batch)
-  );
+export function getMockAttendance() {
+  // Return filtered mock attendance to avoid circular references
+  return MOCK_DATA.attendance.map(record => ({
+    id: record.id,
+    student_id: record.student_id,
+    class_id: record.class_id,
+    date: record.date,
+    status: record.status as 'present' | 'absent',
+    batch: record.batch
+  }));
 }
 
-export function saveMockAttendance(
-  attendanceData: Record<string, 'present' | 'absent'>,
-  date: string,
-  classId: string,
-  batch?: string
-): boolean {
-  try {
-    // In a real app, this would update the database
-    console.log('Saving attendance:', { attendanceData, date, classId, batch });
-    return true;
-  } catch (error) {
-    console.error('Error saving mock attendance:', error);
-    return false;
-  }
+export function saveMockAttendance(records: Attendance[]): boolean {
+  console.log('Would save attendance records:', records);
+  return true;
 }

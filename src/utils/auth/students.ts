@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole } from '../authUtils';
+import { UserRole, StudentRecord } from '../authUtils';
 
 // Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
@@ -47,17 +47,20 @@ export async function fetchStudents(classId?: string, batch?: string) {
       return [];
     }
     
-    // Use explicit type assertions to avoid recursion
-    return (data || []).map((profile) => ({
-      id: profile.id,
-      email: '', // Email is not stored in profiles table
-      name: profile.name,
-      role: profile.role as UserRole,
-      avatar_url: profile.avatar_url || '',
-      class: profile.class || null,
-      batch: profile.batch || null,
-      board: profile.board || null
-    }));
+    // Fix type issues by explicitly defining the return type
+    return (data || []).map((profile) => {
+      const student: StudentRecord = {
+        id: profile.id,
+        name: profile.name,
+        role: profile.role as UserRole,
+        avatar_url: profile.avatar_url || '',
+        // Provide default values for potentially missing properties
+        class: 'class' in profile ? profile.class : null,
+        batch: 'batch' in profile ? profile.batch : null,
+        board: 'board' in profile ? profile.board : null
+      };
+      return student;
+    });
   } catch (error) {
     console.error('Error fetching students:', error);
     return [];
@@ -92,17 +95,20 @@ export async function fetchStudentsBySubject(subjectId: string) {
       return [];
     }
     
-    // Use explicit type assertions to avoid recursion
-    return (studentsData || []).map((profile) => ({
-      id: profile.id,
-      email: '', // Email is not stored in profiles table
-      name: profile.name,
-      role: 'student' as UserRole,
-      avatar_url: profile.avatar_url || '',
-      class: profile.class || null,
-      batch: profile.batch || null,
-      board: profile.board || null
-    }));
+    // Fix type issues by explicitly defining the return type
+    return (studentsData || []).map((profile) => {
+      const student: StudentRecord = {
+        id: profile.id,
+        name: profile.name,
+        role: 'student' as UserRole,
+        avatar_url: profile.avatar_url || '',
+        // Provide default values for potentially missing properties
+        class: 'class' in profile ? profile.class : null,
+        batch: 'batch' in profile ? profile.batch : null,
+        board: 'board' in profile ? profile.board : null
+      };
+      return student;
+    });
   } catch (error) {
     console.error('Error fetching students by subject:', error);
     return [];
