@@ -31,7 +31,7 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
       class_id: record.class_id,
       date: record.date,
       status: record.status as 'present' | 'absent',
-      batch: record.batch
+      batch: (record as any).batch || null
     })) : [];
     
     return attendanceRecords;

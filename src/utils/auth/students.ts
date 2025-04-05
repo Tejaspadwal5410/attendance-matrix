@@ -51,13 +51,13 @@ export async function fetchStudents(classId?: string, batch?: string) {
     return (data || []).map((profile) => {
       const student: StudentRecord = {
         id: profile.id,
-        name: profile.name,
-        role: profile.role as UserRole,
+        name: profile.name || '',
+        role: (profile.role as UserRole) || 'student',
         avatar_url: profile.avatar_url || '',
         // Provide default values for potentially missing properties
-        class: 'class' in profile ? profile.class : null,
-        batch: 'batch' in profile ? profile.batch : null,
-        board: 'board' in profile ? profile.board : null
+        class: profile.class as string || null,
+        batch: profile.batch as string || null,
+        board: profile.board as string || null
       };
       return student;
     });
@@ -99,13 +99,13 @@ export async function fetchStudentsBySubject(subjectId: string) {
     return (studentsData || []).map((profile) => {
       const student: StudentRecord = {
         id: profile.id,
-        name: profile.name,
+        name: profile.name || '',
         role: 'student' as UserRole,
         avatar_url: profile.avatar_url || '',
         // Provide default values for potentially missing properties
-        class: 'class' in profile ? profile.class : null,
-        batch: 'batch' in profile ? profile.batch : null,
-        board: 'board' in profile ? profile.board : null
+        class: profile.class as string || null,
+        batch: profile.batch as string || null,
+        board: profile.board as string || null
       };
       return student;
     });
