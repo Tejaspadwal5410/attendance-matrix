@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole } from '../authUtils';
+import { User, UserRole, StudentRecord } from '../authUtils';
 
 // Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
@@ -52,15 +52,15 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Use explicit type assertions to avoid recursion
-    return (data || []).map((record: any) => ({
-      id: record.id,
+    return (data || []).map((profile: any) => ({
+      id: profile.id,
       email: '', // Email is not stored in profiles table
-      name: record.name,
-      role: record.role as UserRole,
-      avatar_url: record.avatar_url || '',
-      class: record.class || null,
-      batch: record.batch || null,
-      board: record.board || null
+      name: profile.name,
+      role: profile.role as UserRole,
+      avatar_url: profile.avatar_url || '',
+      class: profile.class || null,
+      batch: profile.batch || null,
+      board: profile.board || null
     }));
   } catch (error) {
     console.error('Error fetching students:', error);
@@ -97,15 +97,15 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Use explicit type assertions to avoid recursion
-    return (studentsData || []).map((record: any) => ({
-      id: record.id,
+    return (studentsData || []).map((profile: any) => ({
+      id: profile.id,
       email: '', // Email is not stored in profiles table
-      name: record.name,
+      name: profile.name,
       role: 'student' as UserRole,
-      avatar_url: record.avatar_url || '',
-      class: record.class || null,
-      batch: record.batch || null,
-      board: record.board || null
+      avatar_url: profile.avatar_url || '',
+      class: profile.class || null,
+      batch: profile.batch || null,
+      board: profile.board || null
     }));
   } catch (error) {
     console.error('Error fetching students by subject:', error);

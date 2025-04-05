@@ -1,9 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Attendance } from '../authUtils';
+import { Attendance, AttendanceRecord } from '../authUtils';
 
-// Define the MOCK_DATA import directly to avoid circular references
+// Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
 
 export async function fetchAttendanceRecords(
@@ -30,7 +30,7 @@ export async function fetchAttendanceRecords(
       return [];
     }
     
-    // Use explicit type assertions to avoid type recursion
+    // Use explicit type casting to avoid type recursion
     return (data || []).map((record: any) => ({
       id: record.id,
       student_id: record.student_id || '',

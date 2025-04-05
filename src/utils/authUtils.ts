@@ -22,8 +22,18 @@ export interface Attendance {
   batch?: string | null;
 }
 
-// Define types for functions to avoid circular dependencies
-type AttendanceRecord = {
+// Define isolated types for functions to avoid circular dependencies
+export type StudentRecord = {
+  id: string;
+  name: string;
+  role: UserRole;
+  avatar_url?: string;
+  class?: string | null;
+  batch?: string | null;
+  board?: string | null;
+};
+
+export type AttendanceRecord = {
   id: string;
   student_id: string;
   class_id: string;
