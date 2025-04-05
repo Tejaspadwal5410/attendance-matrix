@@ -47,3 +47,25 @@ export { fetchAttendanceRecords, saveAttendanceRecords, getMockAttendance, saveM
 export { fetchStudents, fetchStudentsBySubject, validateStudentIds, getMockStudents, getMockStudentsBySubject, addNewStudent } from './auth/students';
 export { fetchClasses } from './auth/classes';
 export { fetchUserProfile, getDemoUser, getRoleFromUser } from './auth/userProfile';
+
+// Function to validate student IDs moved here to avoid circular references
+export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
+  try {
+    if (studentIds.length === 0) return [];
+    
+    // Import MOCK_DATA directly to avoid circular references
+    const { MOCK_DATA } = await import('./supabaseClient');
+    
+    // For mock mode, return all student IDs in the mock data that match
+    const mockStudentIds = MOCK_DATA.users
+      .filter(u => u.role === 'student')
+      .map(u => u.id);
+    
+    return studentIds.filter(id => mockStudentIds.includes(id));
+    
+    // In a real app, we would query the database here
+  } catch (error) {
+    console.error('Error in validateStudentIds:', error);
+    return [];
+  }
+}
