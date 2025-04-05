@@ -1,7 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Attendance, AttendanceRecord } from '../authUtils';
+
+// Import types directly to avoid circular references
+import { Attendance } from '../authUtils';
 
 // Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';

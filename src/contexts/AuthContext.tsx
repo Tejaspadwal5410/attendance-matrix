@@ -3,7 +3,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { supabase, User, UserRole, MOCK_DATA } from '../utils/supabaseClient';
 import { toast } from 'sonner';
 import { AuthContextType } from '../types/auth';
-import { fetchUserProfile, getDemoUser, getRoleFromUser } from '../utils/authUtils';
+import { fetchUserProfile, getDemoUser } from '../utils/authUtils';
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -15,24 +15,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        setLoading(true);
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          const profileData = await fetchUserProfile(session.user.id);
-          if (profileData) {
-            setUser(profileData);
+        // To fix loading screen issue, set a shorter timeout for session check
+        const timeoutPromise = new Promise<void>((resolve) => {
+          setTimeout(() => {
+            console.log('Session check timed out, proceeding with null user');
+            setUser(null);
+            setLoading(false);
+            resolve();
+          }, 3000); // 3 seconds timeout
+        });
+
+        const sessionCheckPromise = (async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session) {
+            const profileData = await fetchUserProfile(session.user.id);
+            if (profileData) {
+              setUser(profileData);
+            } else {
+              setUser(null);
+            }
           } else {
             setUser(null);
           }
-        } else {
-          setUser(null);
-        }
+          setLoading(false);
+        })();
+
+        // Race between timeout and actual session check
+        await Promise.race([sessionCheckPromise, timeoutPromise]);
       } catch (error) {
         console.error('Session check error:', error);
         setUser(null);
-      } finally {
         setLoading(false);
       }
     };

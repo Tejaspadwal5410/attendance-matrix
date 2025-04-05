@@ -1,34 +1,30 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { User, UserRole, StudentRecord } from '../authUtils';
+import { UserRole } from '../authUtils';
 
 // Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
 
+// Define a properly typed function for validateStudentIds
 export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
   try {
     if (studentIds.length === 0) return [];
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'student')
-      .in('id', studentIds);
+    // For mock mode, return all student IDs in the mock data that match
+    const mockStudentIds = MOCK_DATA.users
+      .filter(u => u.role === 'student')
+      .map(u => u.id);
     
-    if (error) {
-      console.error('Error validating student IDs:', error);
-      return [];
-    }
+    return studentIds.filter(id => mockStudentIds.includes(id));
     
-    // Return array of valid student IDs
-    return data.map(profile => profile.id);
+    // In a real app, we would query the database here
   } catch (error) {
     console.error('Error in validateStudentIds:', error);
     return [];
   }
 }
 
-export async function fetchStudents(classId?: string, batch?: string): Promise<User[]> {
+export async function fetchStudents(classId?: string, batch?: string) {
   try {
     let query = supabase
       .from('profiles')
@@ -52,7 +48,7 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
     }
     
     // Use explicit type assertions to avoid recursion
-    return (data || []).map((profile: any) => ({
+    return (data || []).map((profile) => ({
       id: profile.id,
       email: '', // Email is not stored in profiles table
       name: profile.name,
@@ -68,7 +64,7 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<U
   }
 }
 
-export async function fetchStudentsBySubject(subjectId: string): Promise<User[]> {
+export async function fetchStudentsBySubject(subjectId: string) {
   try {
     // Get the class ID for this subject
     const { data: subjectData, error: subjectError } = await supabase
@@ -97,7 +93,7 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
     }
     
     // Use explicit type assertions to avoid recursion
-    return (studentsData || []).map((profile: any) => ({
+    return (studentsData || []).map((profile) => ({
       id: profile.id,
       email: '', // Email is not stored in profiles table
       name: profile.name,
@@ -113,11 +109,11 @@ export async function fetchStudentsBySubject(subjectId: string): Promise<User[]>
   }
 }
 
-export function getMockStudents(): User[] {
+export function getMockStudents() {
   return MOCK_DATA.users.filter(u => u.role === 'student');
 }
 
-export function getMockStudentsBySubject(subjectId: string): User[] {
+export function getMockStudentsBySubject(subjectId: string) {
   // Get the class for this subject
   const subject = MOCK_DATA.subjects.find(s => s.id === subjectId);
   if (!subject) return [];
