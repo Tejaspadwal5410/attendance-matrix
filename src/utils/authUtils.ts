@@ -16,6 +16,7 @@ export interface User {
 // Use proper type exports to avoid isolatedModules error
 export type { AttendanceStatus, AttendanceRecord } from './auth/attendance';
 export type { StudentRecord } from './auth/students';
+export type { BoardOption, BatchOption } from './auth/education';
 
 // Export selective utilities with explicit imports
 export { 
@@ -36,3 +37,4 @@ export {
 
 export { fetchClasses } from './auth/classes';
 export { fetchUserProfile, getDemoUser, getRoleFromUser } from './auth/userProfile';
+export { fetchBoards, fetchBatches, getMockBoards, getMockBatches } from './auth/education';

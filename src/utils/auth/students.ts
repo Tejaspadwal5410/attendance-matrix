@@ -1,7 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_DATA } from '../supabaseClient';
 import type { UserRole } from '../authUtils';
+import { toast } from 'sonner';
 
 // Define types locally to avoid circular references
 export interface StudentRecord {
@@ -157,20 +157,60 @@ export function getMockStudentsBySubject(subjectId: string): StudentRecord[] {
     }));
 }
 
-// Add function to add a new student
+// Add function to add a new student with email/password registration
 export async function addNewStudent(student: {
-  registerNumber: string;
   name: string;
+  email: string;
+  password: string;
+  registerNumber: string;
   class: string;
   batch: string;
   board: string;
 }): Promise<boolean> {
   try {
-    // In a real app, we would create a user in auth and then add to profiles
-    // For demo purposes, we'll just show a success
-    console.log('Would add student:', student);
+    console.log('Adding new student:', student);
     
-    // For demo mode, return true to simulate success
+    // For demo mode, we'll log the details and return success
+    // In a real app, we would create the user in Supabase Auth
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Would create student with auth:', {
+        email: student.email,
+        password: student.password,
+        name: student.name,
+        role: 'student',
+        class: student.class,
+        batch: student.batch,
+        board: student.board
+      });
+      
+      // For demo mode, return true to simulate success
+      toast.info('In production, this would create a real student account');
+      return true;
+    }
+    
+    // In production: Create a new user with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: student.email,
+      password: student.password,
+      options: {
+        data: {
+          name: student.name,
+          role: 'student',
+          class: student.class,
+          batch: student.batch,
+          board: student.board,
+          register_number: student.registerNumber
+        }
+      }
+    });
+    
+    if (error) {
+      console.error('Error adding student with auth:', error);
+      toast.error(error.message);
+      return false;
+    }
+    
+    console.log('Successfully created student with auth:', data);
     return true;
   } catch (error) {
     console.error('Error adding student:', error);

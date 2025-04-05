@@ -2,6 +2,7 @@
 import React from 'react';
 import { User } from '@/utils/supabaseClient';
 import { DashboardStats } from './Dashboard';
+import { AddStudentDialog } from './students/AddStudentDialog';
 
 interface TeacherDashboardHeaderProps {
   user: User | null;
@@ -25,6 +26,9 @@ export const TeacherDashboardHeader: React.FC<TeacherDashboardHeaderProps> = ({
           <p className="text-muted-foreground">
             Welcome back, {user?.name}! Here's an overview of your classes.
           </p>
+        </div>
+        <div>
+          <AddStudentDialog />
         </div>
       </div>
 
