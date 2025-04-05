@@ -34,7 +34,7 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
     
     if (error) throw error;
     
-    // Use local type to avoid circular references
+    // Return typed data without unnecessary intermediate variable
     return data ? data.map((record: any) => ({
       id: record.id,
       student_id: record.student_id,
