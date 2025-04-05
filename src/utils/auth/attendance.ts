@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_DATA } from '../supabaseClient';
 
-// Define the types locally to avoid circular references
+// Define the types locally to completely avoid circular references
 export type AttendanceStatus = 'present' | 'absent';
 
 export interface AttendanceRecord {
@@ -35,16 +35,15 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
     if (error) throw error;
     
     // Use local type to avoid circular references
-    const attendanceRecords: AttendanceRecord[] = data ? data.map((record: any) => ({
+    return data ? data.map((record: any) => ({
       id: record.id,
       student_id: record.student_id,
       class_id: record.class_id,
       date: record.date,
       status: record.status as AttendanceStatus,
       batch: record.batch || null
-    })) : [];
+    })) as AttendanceRecord[] : [];
     
-    return attendanceRecords;
   } catch (error) {
     console.error('Error fetching attendance:', error);
     return [];

@@ -1,10 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_DATA } from '../supabaseClient';
+import type { UserRole } from '../authUtils';
 
 // Define types locally to avoid circular references
-export type UserRole = 'teacher' | 'student';
-
 export interface StudentRecord {
   id: string;
   name: string;
@@ -62,7 +61,7 @@ export async function fetchStudents(classId?: string, batch?: string) {
       const student: StudentRecord = {
         id: profile.id,
         name: profile.name || '',
-        role: (profile.role as UserRole) || 'student',
+        role: 'student',
         avatar_url: profile.avatar_url || '',
         // Handle potentially missing properties
         class: profile.class || null,
@@ -125,19 +124,37 @@ export async function fetchStudentsBySubject(subjectId: string) {
   }
 }
 
-export function getMockStudents() {
-  return MOCK_DATA.users.filter(u => u.role === 'student');
+export function getMockStudents(): StudentRecord[] {
+  return MOCK_DATA.users
+    .filter(u => u.role === 'student')
+    .map(u => ({
+      id: u.id,
+      name: u.name,
+      role: 'student' as const,
+      avatar_url: u.avatar_url,
+      class: u.class,
+      batch: u.batch,
+      board: u.board
+    }));
 }
 
-export function getMockStudentsBySubject(subjectId: string) {
+export function getMockStudentsBySubject(subjectId: string): StudentRecord[] {
   // Get the class for this subject
   const subject = MOCK_DATA.subjects.find(s => s.id === subjectId);
   if (!subject) return [];
   
   // Get all students in this class
-  return MOCK_DATA.users.filter(u => 
-    u.role === 'student' && u.class === subject.class_id
-  );
+  return MOCK_DATA.users
+    .filter(u => u.role === 'student' && u.class === subject.class_id)
+    .map(u => ({
+      id: u.id,
+      name: u.name,
+      role: 'student' as const,
+      avatar_url: u.avatar_url,
+      class: u.class,
+      batch: u.batch,
+      board: u.board
+    }));
 }
 
 // Add function to add a new student

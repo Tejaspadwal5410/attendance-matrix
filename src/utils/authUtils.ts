@@ -13,12 +13,9 @@ export interface User {
   board?: string | null;
 }
 
-// Use types from the module files
-import { AttendanceStatus, AttendanceRecord } from './auth/attendance';
-export { AttendanceStatus, AttendanceRecord };
-
-import { StudentRecord } from './auth/students';
-export { StudentRecord };
+// Use proper type exports to avoid isolatedModules error
+export type { AttendanceStatus, AttendanceRecord } from './auth/attendance';
+export type { StudentRecord } from './auth/students';
 
 // Export selective utilities with explicit imports
 export { 
