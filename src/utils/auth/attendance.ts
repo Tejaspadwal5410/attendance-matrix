@@ -1,9 +1,19 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Attendance, AttendanceRecord } from '../authUtils';
 import { MOCK_DATA } from '../supabaseClient';
 
-// Use explicit type definitions to avoid circular references
+// Define the types locally to avoid circular references
+export type AttendanceStatus = 'present' | 'absent';
+
+export interface AttendanceRecord {
+  id: string;
+  student_id: string;
+  class_id: string;
+  date: string;
+  status: AttendanceStatus;
+  batch?: string | null;
+}
+
 export async function fetchAttendanceRecords(classId?: string, date?: string, batch?: string) {
   try {
     let query = supabase.from('attendance').select('*');
@@ -24,13 +34,13 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
     
     if (error) throw error;
     
-    // Use explicit typing to avoid circular references
+    // Use local type to avoid circular references
     const attendanceRecords: AttendanceRecord[] = data ? data.map((record: any) => ({
       id: record.id,
       student_id: record.student_id,
       class_id: record.class_id,
       date: record.date,
-      status: record.status as 'present' | 'absent',
+      status: record.status as AttendanceStatus,
       batch: record.batch || null
     })) : [];
     
@@ -41,21 +51,26 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
   }
 }
 
-export async function saveAttendanceRecords(records: Attendance[]): Promise<boolean> {
+export async function saveAttendanceRecords(
+  records: Record<string, AttendanceStatus>, 
+  date: string, 
+  classId: string, 
+  batch?: string
+): Promise<boolean> {
   try {
-    if (!records || records.length === 0) return false;
+    if (!records || Object.keys(records).length === 0) return false;
+    
+    const formattedRecords = Object.entries(records).map(([studentId, status]) => ({
+      id: `${studentId}-${classId}-${date}`,
+      student_id: studentId,
+      class_id: classId,
+      date: date,
+      status: status,
+      batch: batch || null
+    }));
     
     // Perform batch upsert to attendance table
-    const { error } = await supabase.from('attendance').upsert(
-      records.map(record => ({
-        id: record.id,
-        student_id: record.student_id,
-        class_id: record.class_id,
-        date: record.date,
-        status: record.status,
-        batch: record.batch
-      }))
-    );
+    const { error } = await supabase.from('attendance').upsert(formattedRecords);
     
     if (error) throw error;
     
@@ -73,12 +88,17 @@ export function getMockAttendance() {
     student_id: record.student_id,
     class_id: record.class_id,
     date: record.date,
-    status: record.status as 'present' | 'absent',
+    status: record.status as AttendanceStatus,
     batch: record.batch
   }));
 }
 
-export function saveMockAttendance(records: Attendance[]): boolean {
-  console.log('Would save attendance records:', records);
+export function saveMockAttendance(
+  records: Record<string, AttendanceStatus>, 
+  date: string, 
+  classId: string, 
+  batch?: string
+): boolean {
+  console.log('Would save attendance records:', records, date, classId, batch);
   return true;
 }

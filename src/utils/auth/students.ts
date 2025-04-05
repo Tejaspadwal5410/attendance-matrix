@@ -1,9 +1,19 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole, StudentRecord } from '../authUtils';
-
-// Import MOCK_DATA directly to avoid circular references
 import { MOCK_DATA } from '../supabaseClient';
+
+// Define types locally to avoid circular references
+export type UserRole = 'teacher' | 'student';
+
+export interface StudentRecord {
+  id: string;
+  name: string;
+  role: UserRole;
+  avatar_url?: string;
+  class?: string | null;
+  batch?: string | null;
+  board?: string | null;
+}
 
 // Define a properly typed function for validateStudentIds
 export async function validateStudentIds(studentIds: string[]): Promise<string[]> {
@@ -100,7 +110,7 @@ export async function fetchStudentsBySubject(subjectId: string) {
       const student: StudentRecord = {
         id: profile.id,
         name: profile.name || '',
-        role: 'student' as UserRole,
+        role: 'student',
         avatar_url: profile.avatar_url || '',
         // Handle potentially missing properties
         class: profile.class || null,

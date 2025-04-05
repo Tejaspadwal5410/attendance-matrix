@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -131,7 +130,7 @@ const AttendanceManagement = () => {
           setAttendanceData(mockAttendance);
         } else {
           // Fetch real attendance data from the database
-          const records = await fetchAttendanceRecords(date, selectedClass, selectedBatch);
+          const records = await fetchAttendanceRecords(selectedClass, date, selectedBatch);
           
           const attendanceMap = records.reduce((acc, curr) => {
             acc[curr.student_id] = curr.status;
@@ -196,6 +195,7 @@ const AttendanceManagement = () => {
     }));
   };
 
+  // Only updating the handleSaveAttendance function to match the new function signature
   const handleSaveAttendance = async () => {
     if (!selectedClass) {
       toast.error('Please select a class');
@@ -219,6 +219,8 @@ const AttendanceManagement = () => {
       
       if (success) {
         toast.success('Attendance saved successfully');
+      } else {
+        toast.error('Failed to save attendance');
       }
     } catch (error) {
       console.error('Error saving attendance:', error);

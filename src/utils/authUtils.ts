@@ -13,37 +13,21 @@ export interface User {
   board?: string | null;
 }
 
-export interface Attendance {
-  id: string;
-  student_id: string;
-  class_id: string;
-  date: string;
-  status: 'present' | 'absent';
-  batch?: string | null;
-}
+// Use types from the module files
+import { AttendanceStatus, AttendanceRecord } from './auth/attendance';
+export { AttendanceStatus, AttendanceRecord };
 
-// Define isolated types for functions to avoid circular dependencies
-export type StudentRecord = {
-  id: string;
-  name: string;
-  role: UserRole;
-  avatar_url?: string;
-  class?: string | null;
-  batch?: string | null;
-  board?: string | null;
-};
-
-export type AttendanceRecord = {
-  id: string;
-  student_id: string;
-  class_id: string;
-  date: string;
-  status: 'present' | 'absent';
-  batch?: string | null;
-};
+import { StudentRecord } from './auth/students';
+export { StudentRecord };
 
 // Export selective utilities with explicit imports
-export { fetchAttendanceRecords, saveAttendanceRecords, getMockAttendance, saveMockAttendance } from './auth/attendance';
+export { 
+  fetchAttendanceRecords, 
+  saveAttendanceRecords, 
+  getMockAttendance, 
+  saveMockAttendance 
+} from './auth/attendance';
+
 export { 
   fetchStudents, 
   fetchStudentsBySubject, 
@@ -52,5 +36,6 @@ export {
   addNewStudent,
   validateStudentIds 
 } from './auth/students';
+
 export { fetchClasses } from './auth/classes';
 export { fetchUserProfile, getDemoUser, getRoleFromUser } from './auth/userProfile';
