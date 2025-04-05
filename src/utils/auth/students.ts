@@ -48,16 +48,16 @@ export async function fetchStudents(classId?: string, batch?: string) {
     }
     
     // Fix type issues by explicitly defining the return type
-    return (data || []).map((profile) => {
+    return (data || []).map((profile: any) => {
       const student: StudentRecord = {
         id: profile.id,
         name: profile.name || '',
         role: (profile.role as UserRole) || 'student',
         avatar_url: profile.avatar_url || '',
-        // Provide default values for potentially missing properties
-        class: profile.class as string || null,
-        batch: profile.batch as string || null,
-        board: profile.board as string || null
+        // Handle potentially missing properties
+        class: profile.class || null,
+        batch: profile.batch || null,
+        board: profile.board || null
       };
       return student;
     });
@@ -96,16 +96,16 @@ export async function fetchStudentsBySubject(subjectId: string) {
     }
     
     // Fix type issues by explicitly defining the return type
-    return (studentsData || []).map((profile) => {
+    return (studentsData || []).map((profile: any) => {
       const student: StudentRecord = {
         id: profile.id,
         name: profile.name || '',
         role: 'student' as UserRole,
         avatar_url: profile.avatar_url || '',
-        // Provide default values for potentially missing properties
-        class: profile.class as string || null,
-        batch: profile.batch as string || null,
-        board: profile.board as string || null
+        // Handle potentially missing properties
+        class: profile.class || null,
+        batch: profile.batch || null,
+        board: profile.board || null
       };
       return student;
     });

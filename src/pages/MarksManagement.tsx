@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
@@ -6,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Download, PenLine, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MOCK_DATA, User as UserType } from '@/utils/supabaseClient';
+import { MOCK_DATA } from '@/utils/supabaseClient';
 import { toast } from 'sonner';
 import { fetchStudents, fetchStudentsBySubject } from '@/utils/authUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ import { MarksFilters } from '@/components/marks/MarksFilters';
 import { MarksTable } from '@/components/marks/MarksTable';
 import { MarksUploader } from '@/components/marks/MarksUploader';
 import { ExamType, MarksData } from '@/types/marks';
+import { StudentRecord } from '@/utils/authUtils';
 
 const MarksManagement = () => {
   const { user, isTeacher } = useAuth();
@@ -23,7 +23,7 @@ const MarksManagement = () => {
   const [marksData, setMarksData] = useState<MarksData>({});
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("manual");
-  const [students, setStudents] = useState<UserType[]>(MOCK_DATA.users.filter(u => u.role === 'student'));
+  const [students, setStudents] = useState<StudentRecord[]>([]);
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
@@ -37,13 +37,7 @@ const MarksManagement = () => {
     setLoading(true);
     try {
       const subjectStudents = await fetchStudentsBySubject(selectedSubject);
-      
-      const processedStudents = subjectStudents.map(student => ({
-        ...student,
-        avatar_url: student.avatar_url || ''
-      }));
-      
-      setStudents(processedStudents);
+      setStudents(subjectStudents);
     } catch (error) {
       console.error('Error loading students:', error);
     } finally {

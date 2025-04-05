@@ -25,13 +25,13 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
     if (error) throw error;
     
     // Use explicit typing to avoid circular references
-    const attendanceRecords: AttendanceRecord[] = data ? data.map(record => ({
+    const attendanceRecords: AttendanceRecord[] = data ? data.map((record: any) => ({
       id: record.id,
       student_id: record.student_id,
       class_id: record.class_id,
       date: record.date,
       status: record.status as 'present' | 'absent',
-      batch: (record as any).batch || null
+      batch: record.batch || null
     })) : [];
     
     return attendanceRecords;
