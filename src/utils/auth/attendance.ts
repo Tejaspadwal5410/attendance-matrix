@@ -97,17 +97,7 @@ export async function saveAttendanceRecords(
       return true;
     }
     
-    // Use explicit typing to avoid recursion issues
-    type UpsertRecord = {
-      id: string;
-      student_id: string;
-      class_id: string;
-      date: string;
-      status: string;
-      batch: string | null;
-    };
-    
-    const formattedRecords: UpsertRecord[] = Object.entries(records).map(([studentId, status]) => ({
+    const formattedRecords = Object.entries(records).map(([studentId, status]) => ({
       id: `${studentId}-${classId}-${date}`,
       student_id: studentId,
       class_id: classId,
@@ -116,8 +106,10 @@ export async function saveAttendanceRecords(
       batch: batch || null
     }));
     
-    // Perform batch upsert to attendance table
-    const { error } = await supabase.from('attendance').upsert(formattedRecords);
+    // Using the suggested approach with type casting to avoid deep recursion
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(formattedRecords as unknown as { [key: string]: any }[]);
     
     if (error) throw error;
     
