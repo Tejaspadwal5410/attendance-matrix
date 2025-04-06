@@ -55,12 +55,12 @@ export default function Index() {
     }
   };
   
-  const handleDemoLogin = async (role: 'teacher') => {
+  const handleDemoLogin = async (role: 'teacher' | 'student') => {
     if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
-      const demoEmail = 'teacher@example.com';
+      let demoEmail = role === 'teacher' ? 'teacher@example.com' : 'student@example.com';
       console.log(`Attempting demo login as ${role} with email ${demoEmail}`);
       
       const { error } = await signIn(demoEmail, 'password');
@@ -149,7 +149,7 @@ export default function Index() {
         </CardContent>
         <CardFooter className="flex flex-col">
           <div className="text-xs text-gray-500 mb-3 w-full">
-            <p>Demo Account:</p>
+            <p>Demo Accounts:</p>
             <div className="flex gap-2 mt-1">
               <Button 
                 size="sm" 
@@ -159,6 +159,15 @@ export default function Index() {
                 className="text-xs flex-1"
               >
                 Login as Teacher
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => handleDemoLogin('student')}
+                disabled={isSubmitting}
+                className="text-xs flex-1"
+              >
+                Login as Student
               </Button>
             </div>
           </div>

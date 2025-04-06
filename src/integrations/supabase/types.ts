@@ -11,45 +11,33 @@ export type Database = {
     Tables: {
       attendance: {
         Row: {
-          class_id: string | null
+          batch: string | null
+          class_id: string
           created_at: string
           date: string
           id: string
           status: string
-          student_id: string | null
+          student_id: string
         }
         Insert: {
-          class_id?: string | null
+          batch?: string | null
+          class_id: string
           created_at?: string
           date: string
-          id?: string
+          id: string
           status: string
-          student_id?: string | null
+          student_id: string
         }
         Update: {
-          class_id?: string | null
+          batch?: string | null
+          class_id?: string
           created_at?: string
           date?: string
           id?: string
           status?: string
-          student_id?: string | null
+          student_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "attendance_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       classes: {
         Row: {
@@ -105,15 +93,7 @@ export type Database = {
           status?: string
           student_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "leave_requests_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       marks: {
         Row: {
@@ -142,13 +122,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "marks_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "marks_subject_id_fkey"
             columns: ["subject_id"]
             isOneToOne: false
@@ -160,30 +133,24 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          batch: string | null
-          board: string | null
-          class: string | null
           created_at: string
+          email: string
           id: string
           name: string
           role: string
         }
         Insert: {
           avatar_url?: string | null
-          batch?: string | null
-          board?: string | null
-          class?: string | null
           created_at?: string
+          email: string
           id: string
           name: string
           role: string
         }
         Update: {
           avatar_url?: string | null
-          batch?: string | null
-          board?: string | null
-          class?: string | null
           created_at?: string
+          email?: string
           id?: string
           name?: string
           role?: string
@@ -208,7 +175,7 @@ export type Database = {
           class: string
           created_at?: string | null
           email: string
-          id: string
+          id?: string
           name: string
           register_number: string
           updated_at?: string | null

@@ -64,14 +64,13 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
     
     if (error) throw error;
     
-    // Use type assertion to avoid deep recursion
-    return (data as any[] || []).map(record => ({
+    return (data || []).map(record => ({
       id: record.id,
       student_id: record.student_id,
       class_id: record.class_id,
       date: record.date,
       status: record.status as AttendanceStatus,
-      batch: record.batch || null
+      batch: record.batch
     }));
     
   } catch (error) {
@@ -97,6 +96,7 @@ export async function saveAttendanceRecords(
       return true;
     }
     
+    // Create array of records for upsert
     const formattedRecords = Object.entries(records).map(([studentId, status]) => ({
       id: `${studentId}-${classId}-${date}`,
       student_id: studentId,
@@ -106,10 +106,20 @@ export async function saveAttendanceRecords(
       batch: batch || null
     }));
     
-    // Using the suggested approach with type casting to avoid deep recursion
+    // Explicitly type the records array to avoid TypeScript recursion error
+    type AttendanceUpsert = {
+      id: string;
+      student_id: string;
+      class_id: string;
+      date: string;
+      status: string;
+      batch: string | null;
+    };
+    
+    // Perform batch upsert to attendance table
     const { error } = await supabase
       .from('attendance')
-      .upsert(formattedRecords as unknown as { [key: string]: any }[]);
+      .upsert(formattedRecords as AttendanceUpsert[]);
     
     if (error) throw error;
     
@@ -121,8 +131,7 @@ export async function saveAttendanceRecords(
 }
 
 export function getMockAttendance(): AttendanceRecord[] {
-  // Use type assertions to break circular references
-  return (MOCK_DATA.attendance as any[]).map(record => ({
+  return MOCK_DATA.attendance.map(record => ({
     id: record.id,
     student_id: record.student_id,
     class_id: record.class_id,
