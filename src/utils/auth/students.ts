@@ -85,8 +85,8 @@ export async function fetchStudents(classId?: string, batch?: string): Promise<S
       return [];
     }
     
-    // Fix type issues by explicitly defining the return type
-    return (data || []).map((profile: any) => {
+    // Use explicit typing to avoid recursive type issues
+    return (data || []).map((profile) => {
       const student: StudentRecord = {
         id: profile.id,
         name: profile.name || '',
@@ -243,6 +243,16 @@ export async function addNewStudent(student: {
     // If successful and we have a user, add record to the students table
     if (data?.user) {
       // Use proper typing for the insert operation
+      type StudentInsert = {
+        id: string;
+        name: string;
+        email: string;
+        register_number: string;
+        class: string;
+        batch: string;
+        board: string;
+      };
+      
       const { error: insertError } = await supabase
         .from('students')
         .insert({
@@ -253,7 +263,7 @@ export async function addNewStudent(student: {
           class: student.class,
           batch: student.batch,
           board: student.board
-        });
+        } as StudentInsert);
       
       if (insertError) {
         console.error('Error adding student to students table:', insertError);
