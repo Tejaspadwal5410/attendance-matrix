@@ -160,6 +160,9 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          batch: string | null
+          board: string | null
+          class: string | null
           created_at: string
           id: string
           name: string
@@ -167,6 +170,9 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          batch?: string | null
+          board?: string | null
+          class?: string | null
           created_at?: string
           id: string
           name: string
@@ -174,10 +180,49 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          batch?: string | null
+          board?: string | null
+          class?: string | null
           created_at?: string
           id?: string
           name?: string
           role?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          batch: string
+          board: string
+          class: string
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          register_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          batch: string
+          board: string
+          class: string
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          register_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          batch?: string
+          board?: string
+          class?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          register_number?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

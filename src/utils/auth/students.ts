@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { MOCK_DATA } from '../supabaseClient';
 import type { UserRole } from '../authUtils';
@@ -12,6 +13,7 @@ export interface StudentRecord {
   class?: string | null;
   batch?: string | null;
   board?: string | null;
+  register_number?: string | null;
 }
 
 // Define a properly typed function for validateStudentIds
@@ -66,7 +68,8 @@ export async function fetchStudents(classId?: string, batch?: string) {
         // Handle potentially missing properties
         class: profile.class || null,
         batch: profile.batch || null,
-        board: profile.board || null
+        board: profile.board || null,
+        register_number: profile.register_number || null
       };
       return student;
     });
@@ -180,7 +183,8 @@ export async function addNewStudent(student: {
         role: 'student',
         class: student.class,
         batch: student.batch,
-        board: student.board
+        board: student.board,
+        register_number: student.registerNumber
       });
       
       // For demo mode, return true to simulate success
@@ -208,6 +212,29 @@ export async function addNewStudent(student: {
       console.error('Error adding student with auth:', error);
       toast.error(error.message);
       return false;
+    }
+    
+    // If successful, also add to the students table
+    if (data?.user) {
+      const { error: studentError } = await supabase
+        .from('students')
+        .insert({
+          id: data.user.id,
+          name: student.name,
+          email: student.email,
+          register_number: student.registerNumber,
+          class: student.class,
+          batch: student.batch,
+          board: student.board,
+        });
+      
+      if (studentError) {
+        console.error('Error adding student to students table:', studentError);
+        // We've created the auth entry but failed to add to students table
+        // In a production environment, you might want to handle this case
+        // (e.g., by deleting the auth entry or implementing a cleanup job)
+        return false;
+      }
     }
     
     console.log('Successfully created student with auth:', data);
