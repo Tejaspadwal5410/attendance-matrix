@@ -64,15 +64,15 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
     
     if (error) throw error;
     
-    // Return typed data without unnecessary intermediate variable
-    return data ? data.map((record: any) => ({
+    // Use type assertion to avoid deep recursion
+    return (data as any[] || []).map(record => ({
       id: record.id,
       student_id: record.student_id,
       class_id: record.class_id,
       date: record.date,
       status: record.status as AttendanceStatus,
       batch: record.batch || null
-    })) : [];
+    }));
     
   } catch (error) {
     console.error('Error fetching attendance:', error);
@@ -97,7 +97,17 @@ export async function saveAttendanceRecords(
       return true;
     }
     
-    const formattedRecords = Object.entries(records).map(([studentId, status]) => ({
+    // Use explicit typing to avoid recursion issues
+    type UpsertRecord = {
+      id: string;
+      student_id: string;
+      class_id: string;
+      date: string;
+      status: string;
+      batch: string | null;
+    };
+    
+    const formattedRecords: UpsertRecord[] = Object.entries(records).map(([studentId, status]) => ({
       id: `${studentId}-${classId}-${date}`,
       student_id: studentId,
       class_id: classId,
@@ -119,8 +129,8 @@ export async function saveAttendanceRecords(
 }
 
 export function getMockAttendance(): AttendanceRecord[] {
-  // Return filtered mock attendance to avoid circular references
-  return MOCK_DATA.attendance.map(record => ({
+  // Use type assertions to break circular references
+  return (MOCK_DATA.attendance as any[]).map(record => ({
     id: record.id,
     student_id: record.student_id,
     class_id: record.class_id,
