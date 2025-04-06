@@ -64,13 +64,15 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
     
     if (error) throw error;
     
+    // Explicitly type-cast each record to our AttendanceRecord interface
     return (data || []).map(record => ({
       id: record.id,
       student_id: record.student_id,
       class_id: record.class_id,
       date: record.date,
       status: record.status as AttendanceStatus,
-      batch: record.batch
+      // Only include batch if it exists in the database record
+      ...(record.batch !== undefined ? { batch: record.batch } : {})
     }));
     
   } catch (error) {
@@ -106,8 +108,9 @@ export async function saveAttendanceRecords(
       batch: batch || null
     }));
     
-    // Explicitly type the records array to avoid TypeScript recursion error
-    type AttendanceUpsert = {
+    // Define a simple type for the database insert operation
+    // This avoids the recursive type reference issue
+    type AttendanceInsert = {
       id: string;
       student_id: string;
       class_id: string;
@@ -119,7 +122,7 @@ export async function saveAttendanceRecords(
     // Perform batch upsert to attendance table
     const { error } = await supabase
       .from('attendance')
-      .upsert(formattedRecords as AttendanceUpsert[]);
+      .upsert(formattedRecords as AttendanceInsert[]);
     
     if (error) throw error;
     
