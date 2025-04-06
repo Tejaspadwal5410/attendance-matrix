@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -14,7 +15,8 @@ import {
   Search, 
   User, 
   X, 
-  Plus
+  Plus,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,6 +62,8 @@ const AttendanceManagement = () => {
   const [newStudent, setNewStudent] = useState({
     registerNumber: '',
     name: '',
+    email: '',
+    password: '',
     class: '',
     batch: '',
     board: ''
@@ -252,7 +256,9 @@ const AttendanceManagement = () => {
   };
 
   const handleAddStudent = async () => {
-    if (!newStudent.registerNumber || !newStudent.name || !newStudent.class || !newStudent.batch || !newStudent.board) {
+    if (!newStudent.registerNumber || !newStudent.name || !newStudent.email || 
+        !newStudent.password || !newStudent.class || !newStudent.batch || 
+        !newStudent.board) {
       toast.error('All fields are required');
       return;
     }
@@ -260,7 +266,15 @@ const AttendanceManagement = () => {
     setIsAddingStudent(true);
     
     try {
-      const success = await addNewStudent(newStudent);
+      const success = await addNewStudent({
+        name: newStudent.name,
+        email: newStudent.email,
+        password: newStudent.password,
+        registerNumber: newStudent.registerNumber,
+        class: newStudent.class,
+        batch: newStudent.batch,
+        board: newStudent.board
+      });
       
       if (success) {
         // Refresh the student list if current filters match the new student
@@ -277,6 +291,8 @@ const AttendanceManagement = () => {
         setNewStudent({
           registerNumber: '',
           name: '',
+          email: '',
+          password: '',
           class: '',
           batch: '',
           board: ''
@@ -284,9 +300,11 @@ const AttendanceManagement = () => {
         
         // Close the modal
         setIsModalOpen(false);
+        toast.success('Student added successfully');
       }
     } catch (error) {
       console.error('Error adding student:', error);
+      toast.error('Failed to add student');
     } finally {
       setIsAddingStudent(false);
     }
@@ -349,6 +367,30 @@ const AttendanceManagement = () => {
                   placeholder="Enter student name"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                  disabled={isAddingStudent}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="studentEmail" className="text-sm font-medium">Email Address</label>
+                <Input
+                  id="studentEmail"
+                  type="email"
+                  placeholder="Enter student email"
+                  value={newStudent.email}
+                  onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
+                  disabled={isAddingStudent}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="studentPassword" className="text-sm font-medium">Password</label>
+                <Input
+                  id="studentPassword"
+                  type="password"
+                  placeholder="Enter password"
+                  value={newStudent.password}
+                  onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
                   disabled={isAddingStudent}
                 />
               </div>

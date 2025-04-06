@@ -35,8 +35,35 @@ export async function validateStudentIds(studentIds: string[]): Promise<string[]
   }
 }
 
-export async function fetchStudents(classId?: string, batch?: string) {
+export async function fetchStudents(classId?: string, batch?: string): Promise<StudentRecord[]> {
   try {
+    console.log('Fetching students with filters:', { classId, batch });
+    
+    // For demo/development mode, use mock data
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Using mock student data');
+      let filteredStudents = MOCK_DATA.users.filter(u => u.role === 'student');
+      
+      if (classId) {
+        filteredStudents = filteredStudents.filter(s => s.class === classId);
+      }
+      
+      if (batch) {
+        filteredStudents = filteredStudents.filter(s => s.batch === batch);
+      }
+      
+      return filteredStudents.map(u => ({
+        id: u.id,
+        name: u.name,
+        role: 'student' as const,
+        avatar_url: u.avatar_url,
+        class: u.class,
+        batch: u.batch,
+        board: u.board
+      }));
+    }
+    
+    // For production mode, use Supabase
     let query = supabase
       .from('profiles')
       .select('*')
@@ -79,7 +106,7 @@ export async function fetchStudents(classId?: string, batch?: string) {
   }
 }
 
-export async function fetchStudentsBySubject(subjectId: string) {
+export async function fetchStudentsBySubject(subjectId: string): Promise<StudentRecord[]> {
   try {
     // Get the class ID for this subject
     const { data: subjectData, error: subjectError } = await supabase
@@ -171,14 +198,13 @@ export async function addNewStudent(student: {
   board: string;
 }): Promise<boolean> {
   try {
-    console.log('Adding new student:', student);
+    console.log('Adding new student:', { ...student, password: '***' });
     
     // For demo mode, we'll log the details and return success
-    // In a real app, we would create the user in Supabase Auth
     if (process.env.NODE_ENV === 'development') {
       console.log('Would create student with auth:', {
         email: student.email,
-        password: student.password,
+        password: '[REDACTED]',
         name: student.name,
         role: 'student',
         class: student.class,
@@ -214,9 +240,10 @@ export async function addNewStudent(student: {
       return false;
     }
     
-    // If successful, also add to the students table
+    // If successful and we have a user, add record to the students table
     if (data?.user) {
-      const { error: studentError } = await supabase
+      // Use proper typing for the insert operation
+      const { error: insertError } = await supabase
         .from('students')
         .insert({
           id: data.user.id,
@@ -225,19 +252,17 @@ export async function addNewStudent(student: {
           register_number: student.registerNumber,
           class: student.class,
           batch: student.batch,
-          board: student.board,
+          board: student.board
         });
       
-      if (studentError) {
-        console.error('Error adding student to students table:', studentError);
+      if (insertError) {
+        console.error('Error adding student to students table:', insertError);
         // We've created the auth entry but failed to add to students table
-        // In a production environment, you might want to handle this case
-        // (e.g., by deleting the auth entry or implementing a cleanup job)
         return false;
       }
     }
     
-    console.log('Successfully created student with auth:', data);
+    console.log('Successfully created student with auth');
     return true;
   } catch (error) {
     console.error('Error adding student:', error);

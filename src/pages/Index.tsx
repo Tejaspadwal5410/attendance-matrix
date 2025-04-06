@@ -55,21 +55,21 @@ export default function Index() {
     }
   };
   
-  const handleDemoLogin = async () => {
+  const handleDemoLogin = async (role: 'teacher') => {
     if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
       const demoEmail = 'teacher@example.com';
-      console.log(`Attempting demo login as teacher with email ${demoEmail}`);
+      console.log(`Attempting demo login as ${role} with email ${demoEmail}`);
       
       const { error } = await signIn(demoEmail, 'password');
       
       if (error) {
         console.error(`Demo login error:`, error);
-        toast.error('Failed to log in with demo account');
+        toast.error(`Failed to log in with demo ${role} account`);
       } else {
-        console.log(`Demo login successful as teacher`);
+        console.log(`Demo login successful as ${role}`);
       }
     } catch (error: any) {
       console.error(`Demo login error:`, error);
@@ -154,7 +154,7 @@ export default function Index() {
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={handleDemoLogin}
+                onClick={() => handleDemoLogin('teacher')}
                 disabled={isSubmitting}
                 className="text-xs flex-1"
               >

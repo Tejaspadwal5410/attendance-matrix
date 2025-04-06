@@ -14,8 +14,38 @@ export interface AttendanceRecord {
   batch?: string | null;
 }
 
-export async function fetchAttendanceRecords(classId?: string, date?: string, batch?: string) {
+export async function fetchAttendanceRecords(classId?: string, date?: string, batch?: string): Promise<AttendanceRecord[]> {
   try {
+    console.log('Fetching attendance records with filters:', { classId, date, batch });
+    
+    // For demo/development mode, use mock data
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Using mock attendance data');
+      let filteredRecords = MOCK_DATA.attendance;
+      
+      if (classId) {
+        filteredRecords = filteredRecords.filter(a => a.class_id === classId);
+      }
+      
+      if (date) {
+        filteredRecords = filteredRecords.filter(a => a.date === date);
+      }
+      
+      if (batch) {
+        filteredRecords = filteredRecords.filter(a => a.batch === batch);
+      }
+      
+      return filteredRecords.map(record => ({
+        id: record.id,
+        student_id: record.student_id,
+        class_id: record.class_id,
+        date: record.date,
+        status: record.status as AttendanceStatus,
+        batch: record.batch
+      }));
+    }
+    
+    // For production, fetch from Supabase
     let query = supabase.from('attendance').select('*');
     
     if (classId) {
@@ -42,7 +72,7 @@ export async function fetchAttendanceRecords(classId?: string, date?: string, ba
       date: record.date,
       status: record.status as AttendanceStatus,
       batch: record.batch || null
-    })) as AttendanceRecord[] : [];
+    })) : [];
     
   } catch (error) {
     console.error('Error fetching attendance:', error);
@@ -58,6 +88,14 @@ export async function saveAttendanceRecords(
 ): Promise<boolean> {
   try {
     if (!records || Object.keys(records).length === 0) return false;
+    
+    console.log('Saving attendance records:', { records, date, classId, batch });
+    
+    // For demo/development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Would save attendance records:', records, date, classId, batch);
+      return true;
+    }
     
     const formattedRecords = Object.entries(records).map(([studentId, status]) => ({
       id: `${studentId}-${classId}-${date}`,
@@ -80,7 +118,7 @@ export async function saveAttendanceRecords(
   }
 }
 
-export function getMockAttendance() {
+export function getMockAttendance(): AttendanceRecord[] {
   // Return filtered mock attendance to avoid circular references
   return MOCK_DATA.attendance.map(record => ({
     id: record.id,
